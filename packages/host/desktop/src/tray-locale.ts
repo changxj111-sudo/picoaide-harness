@@ -132,13 +132,30 @@ export interface DesktopUpdateDialogCopy {
   readonly downloadedMessage: (version: string, product: string) => string
   /** Linux AppImage replacement instruction. */
   readonly downloadedDetail: (installerPath: string) => string
-  /** macOS: the disk image opened — how to finish the install. */
+  /** macOS: the disk image opened — how to finish the install manually (fallback path). */
   readonly darwinOpenedDetail: (product: string) => string
+  /**
+   * macOS: confirm the **in-place** update (restart, replace the bundle, reopen).
+   *
+   * 2026-10-09：原地更新之前 macOS 只有"打开磁盘映像、用户自己拖"。这一段只在
+   * 原地更新**确实可行**时出现（见 `canInstallMacosInPlace`），做不到时仍然走
+   * {@link darwinOpenedDetail} —— 措辞必须与接下来真的会发生的事一致。
+   */
+  readonly darwinInstallDetail: (version: string, product: string) => string
+  /** macOS: the last in-place attempt did not take effect (reported on the next start). */
+  readonly darwinUpdateFailedTitle: (product: string) => string
+  readonly darwinUpdateFailedMessage: (version: string, product: string) => string
+  readonly darwinUpdateFailedDetail: (reason: string, logPath: string, backupPath: string) => string
+  /** macOS: localized text for one helper failure code (unknown codes stay verbatim). */
+  readonly darwinUpdateFailureReason: (reason: string) => string
   /** Windows: confirm restarting into the NSIS installer. */
   readonly winInstallDetail: (product: string) => string
-  /** Windows: affirmative button of that dialog. */
+  /**
+   * 安装确认框的肯定按钮。Windows 用它确认"重启并运行安装程序"，macOS 的原点更新
+   * （2026-10-09）用它确认"重启并替换"—— 语义相同，故共用一条文案。
+   */
   readonly winRestart: string
-  /** Windows: negative button of that dialog. */
+  /** 安装确认框的否定按钮（两个平台共用）。 */
   readonly winLater: string
   /** Manual "check for updates" failure dialog. */
   readonly checkFailedTitle: (product: string) => string
@@ -156,6 +173,61 @@ export interface DesktopUpdateDialogCopy {
   readonly confirm: string
 }
 
+/**
+ * 帮手脚本写进结果文件的失败码 → 用户可读的一句话。
+ *
+ * 码本身来自 `macos-update-install.ts` 的脚本（`record failed <phase> <reason>`），
+ * 是**跨进程契约**：脚本改成新码而这里没跟上时，`darwinUpdateFailureReason` 会把原码
+ * 原样显示（可诊断，不会变成空白），同时 `macos-update-install.spec.ts` 会钉住
+ * "脚本里出现的每一个码都在表里" —— 漏一个即红。
+ */
+const macosUpdateFailureText: Record<DesktopLocale, (reason: string) => string> = {
+  en: (reason) => {
+    switch (reason) {
+      case 'application-still-running':
+        return 'the application did not quit in time, so nothing was replaced.'
+      case 'copy-failed':
+        return 'the new version could not be copied next to the current one (check disk space).'
+      case 'verification-failed':
+        return 'the downloaded application did not pass code signature verification.'
+      case 'swap-failed':
+        return 'the current application could not be moved aside.'
+      case 'rollback-restored':
+        return 'placing the new version failed; the previous version was restored.'
+      case 'rollback-failed':
+        return 'the new version could not be started and restoring the previous one failed.'
+      case 'application-did-not-start':
+        return 'the new version was installed but did not start, so the previous version was restored.'
+      case '':
+        return 'the update was interrupted before it finished.'
+      default:
+        return reason
+    }
+  },
+  zh: (reason) => {
+    switch (reason) {
+      case 'application-still-running':
+        return '应用没有及时退出，因此没有替换任何文件。'
+      case 'copy-failed':
+        return '新版本无法复制到当前版本旁边（请检查磁盘空间）。'
+      case 'verification-failed':
+        return '下载到的应用没有通过代码签名校验。'
+      case 'swap-failed':
+        return '无法把当前应用移到一边。'
+      case 'rollback-restored':
+        return '新版本落位失败，已恢复原来的版本。'
+      case 'rollback-failed':
+        return '新版本无法启动，并且恢复原版本也失败了。'
+      case 'application-did-not-start':
+        return '新版本已安装但没有启动，因此已恢复原来的版本。'
+      case '':
+        return '更新在完成前被中断。'
+      default:
+        return reason
+    }
+  },
+}
+
 const updateDialogCopy: Record<DesktopLocale, DesktopUpdateDialogCopy> = {
   en: {
     readyTitle: product => `${product} Update Ready`,
@@ -163,13 +235,24 @@ const updateDialogCopy: Record<DesktopLocale, DesktopUpdateDialogCopy> = {
     readyDetail: (platform, installerPath, product) => platform === 'linux'
       ? `The new AppImage has been downloaded to: ${installerPath}\n\nChoose Install Update in the app or the tray menu, then quit and replace the current AppImage with that file.`
       : platform === 'darwin'
-        ? 'The disk image will open when you install. Choose Install Update in the app or the tray menu to continue.'
+        // 2026-10-09：macOS 的常规路径已经是**原地替换 + 自动重开**（磁盘映像只在
+        // 做不到时才会打开，见 macos-update-install.ts 的回落表）⇒ 这里不再预告
+        // "安装时会打开磁盘映像"，否则文案与接下来发生的事不符。
+        ? 'Choose Install Update in the app or the tray menu to continue.'
         : `Choose Install Update in the app or the tray menu to restart ${product} and run the installer.`,
     downloadedTitle: product => `${product} Update Downloaded`,
     downloadedMessage: (version, product) => `${product} ${version} is ready to install.`,
     downloadedDetail: installerPath =>
       `The new AppImage has been downloaded to: ${installerPath}\n\nQuit this application, replace the current AppImage with that file, then run it again.`,
     darwinOpenedDetail: product => `The disk image has opened. Replace ${product} in Applications, then reopen it.`,
+    darwinInstallDetail: (version, product) =>
+      `${product} will restart, replace itself with ${version}, and reopen automatically. Any unsaved work in the app should be finished first.`,
+    darwinUpdateFailedTitle: product => `${product} Could Not Be Updated`,
+    darwinUpdateFailedMessage: (version, product) =>
+      `${product} is still on the current version; the update to ${version} did not finish.`,
+    darwinUpdateFailedDetail: (reason, logPath, backupPath) =>
+      `Reason: ${macosUpdateFailureText.en(reason)}\nLog: ${logPath}${backupPath === '' ? '' : `\nBackup: ${backupPath}`}`,
+    darwinUpdateFailureReason: reason => macosUpdateFailureText.en(reason),
     winInstallDetail: product => `Restart ${product} and run the installer now?`,
     winRestart: 'Restart and Install',
     winLater: 'Later',
@@ -190,13 +273,21 @@ const updateDialogCopy: Record<DesktopLocale, DesktopUpdateDialogCopy> = {
     readyDetail: (platform, installerPath, product) => platform === 'linux'
       ? `新版本 AppImage 已下载到: ${installerPath}\n\n在界面或托盘里点「安装更新」后,关闭本程序并用该文件替换当前 AppImage。`
       : platform === 'darwin'
-        ? '安装时会打开磁盘映像。请在应用内或托盘菜单中选择「安装更新」继续。'
+        ? '请在应用内或托盘菜单中选择「安装更新」继续。'
         : `请在应用内或托盘菜单中选择「安装更新」，以重启 ${product} 并运行安装程序。`,
     downloadedTitle: product => `${product} 更新已下载`,
     downloadedMessage: (version, product) => `${product} ${version} 已可安装。`,
     downloadedDetail: installerPath =>
       `新版本 AppImage 已下载到: ${installerPath}\n\n请关闭本程序, 用该文件替换当前 AppImage 后重新运行。`,
     darwinOpenedDetail: product => `磁盘映像已打开。请用新版本替换「应用程序」里的 ${product}，然后重新打开。`,
+    darwinInstallDetail: (version, product) =>
+      `${product} 将自动重启，把自己替换为 ${version}，并在替换完成后重新打开。请先处理尚未保存的内容。`,
+    darwinUpdateFailedTitle: product => `${product} 更新失败`,
+    darwinUpdateFailedMessage: (version, product) =>
+      `${product} 仍是当前版本，更新到 ${version} 没有完成。`,
+    darwinUpdateFailedDetail: (reason, logPath, backupPath) =>
+      `原因：${macosUpdateFailureText.zh(reason)}\n日志：${logPath}${backupPath === '' ? '' : `\n旧版本备份：${backupPath}`}`,
+    darwinUpdateFailureReason: reason => macosUpdateFailureText.zh(reason),
     winInstallDetail: product => `现在重启 ${product} 并运行安装程序吗？`,
     winRestart: '重启并安装',
     winLater: '稍后',

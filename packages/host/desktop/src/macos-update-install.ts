@@ -572,11 +572,21 @@ export function clearMacosUpdateLeftovers(
   }
 }
 
-/** 尽力卸载影像（失败只记日志：残留挂载点会被下一次准备阶段清掉）。 */
+/**
+ * 尽力卸载影像（失败只记日志：残留挂载点会被下一次准备阶段清掉）。
+ *
+ * 挂载点**根本不存在**时直接跳过：这不是"卸载失败"。真机上就有这一条噪声路径 ——
+ * 准备阶段在 `assertSameApplication` 上拒掉一个版本不符的安装包时先抛错，`finally`
+ * 里的清理再去 detach 那个已经被 `hdiutil attach` 自己回收掉（或压根没建起来）的挂载点，
+ * 日志里就会多出一行 `hdiutil: detach failed - 无此文件或目录`，看起来像更新坏了。
+ */
 export function detachImage(run: MacosCommandRunner, mountPoint: string, log: (message: string) => void = () => {}): void {
+  if (!existsSync(mountPoint)) return
   try {
     run('hdiutil', ['detach', mountPoint])
   } catch (cause) {
+    // 竞态下"刚好被别人卸载掉"同样不是错误：判据是挂载点还在不在，不是 detach 的退出码。
+    if (!existsSync(mountPoint)) return
     log(`could not detach ${mountPoint}: ${cause instanceof Error ? cause.message : String(cause)}`)
   }
 }
@@ -891,10 +901,11 @@ fi
 log "replaced $TARGET"
 /usr/bin/xattr -dr com.apple.quarantine "$TARGET" >>"$LOG_FILE" 2>&1 || true
 /bin/rm -f "$BOOT_FILE" >>"$LOG_FILE" 2>&1 || true
-/usr/bin/hdiutil detach "$MOUNT" >>"$LOG_FILE" 2>&1 || true
 
-# 5) 打开新版本，等它的启动标记（@@BOOT_WAIT_TICKS@@ × 0.5s = @@BOOT_WAIT_SECONDS@@s）。等到了才删备份。
+# 5) 先把新版本打开，再收尾（卸载影像）。顺序有讲究：卸载影像可能是秒级，而用户此刻
+#    正盯着"应用已经关了"的空白期 —— 让他先看到图标在跳，而不是白等。
 relaunch "$TARGET"
+/usr/bin/hdiutil detach "$MOUNT" >>"$LOG_FILE" 2>&1 || true
 waited=0
 while [ "$waited" -lt @@BOOT_WAIT_TICKS@@ ]; do
   if [ -f "$BOOT_FILE" ] && /usr/bin/grep -q "version=$VERSION" "$BOOT_FILE" 2>/dev/null; then

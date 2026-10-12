@@ -55,6 +55,44 @@ vi.mock('../src/update-download.ts', () => ({
   downloadDesktopUpdate: updater.download,
 }))
 
+/**
+ * macOS 原地更新的替身（真逻辑在 `tests/macos-update-install.spec.ts` 与
+ * `tests/macos-update-helper.integration.spec.ts` 里判）。这里只判**接线**：
+ * 什么时候问用户、什么时候回落、什么时候才允许退出宿主。
+ *
+ * 缺省 `canInstallMacosInPlace` 返回 `not-packaged`（= 做不到）——与 electron 替身里
+ * `app.isPackaged = false` 同口径，于是既有的"打开磁盘映像"用例保持不变。
+ */
+const macosUpdate = vi.hoisted(() => ({
+  canInstallMacosInPlace: vi.fn((): string | undefined => 'not-packaged'),
+  prepareMacosInPlaceUpdate: vi.fn(),
+  writeMacosUpdateHelper: vi.fn(() => ({
+    scriptPath: '/tmp/dsh-desktop-user-data/updates/macos/apply-update.sh',
+    command: '/bin/sh',
+    args: ['/tmp/dsh-desktop-user-data/updates/macos/apply-update.sh'],
+    resultPath: '/tmp/dsh-desktop-user-data/updates/macos/last-apply.txt',
+    logPath: '/tmp/dsh-desktop-user-data/updates/macos/apply-update.log',
+    bootMarkerPath: '/tmp/dsh-desktop-user-data/updates/macos/booted.txt',
+  })),
+  spawnMacosUpdateHelper: vi.fn(async () => {}),
+  writeMacosUpdateBootMarker: vi.fn(),
+  readMacosUpdateOutcome: vi.fn((): unknown => undefined),
+  clearMacosUpdateRecord: vi.fn(),
+  removeMacosUpdateBackup: vi.fn(),
+  clearMacosUpdateLeftovers: vi.fn(),
+  runMacosCommand: vi.fn(() => ''),
+  macAppBundlePath: vi.fn(() => '/Applications/PicoAide Harness.app'),
+  macosUpdatePaths: vi.fn(() => ({
+    scriptPath: '/tmp/dsh-desktop-user-data/updates/macos/apply-update.sh',
+    logPath: '/tmp/dsh-desktop-user-data/updates/macos/apply-update.log',
+    resultPath: '/tmp/dsh-desktop-user-data/updates/macos/last-apply.txt',
+    bootMarkerPath: '/tmp/dsh-desktop-user-data/updates/macos/booted.txt',
+    mountPoint: '/tmp/dsh-desktop-user-data/updates/macos/image',
+  })),
+}))
+
+vi.mock('../src/macos-update-install.ts', () => macosUpdate)
+
 vi.mock('node:child_process', () => ({ spawn: childProcess.spawn }))
 
 const electron = vi.hoisted(() => {
@@ -358,6 +396,13 @@ describe('Electron compatibility runtime', () => {
     childProcess.reset()
     vi.clearAllMocks()
     updater.download.mockReset()
+    // 替身的缺省值在 `vi.clearAllMocks()` 之后必须重新装上：否则"做不到原地更新"
+    // 会变成"返回值 undefined = 做得到"，既有的 macOS 回落用例会集体变红。
+    macosUpdate.canInstallMacosInPlace.mockReturnValue('not-packaged')
+    macosUpdate.prepareMacosInPlaceUpdate.mockReset()
+    macosUpdate.spawnMacosUpdateHelper.mockReset()
+    macosUpdate.spawnMacosUpdateHelper.mockResolvedValue(undefined)
+    macosUpdate.readMacosUpdateOutcome.mockReturnValue(undefined)
     diagnostics.export.mockReset()
     electron.loadURL.mockReset()
     electron.loadURL.mockResolvedValue(undefined)
@@ -1149,6 +1194,232 @@ describe('Electron compatibility runtime', () => {
     await expect(runtime.updates.installUpdate('2.1.0', '/tmp/DSH-Desktop-2.1.0-mac.dmg'))
       .rejects.toThrow('Launch Services rejected the image')
     expect(electron.dialog.showMessageBox).not.toHaveBeenCalled()
+  })
+
+  describe('macOS 原地更新（2026-10-09）', () => {
+    /** 一个准备好的替换计划（判据只关心它被原样传下去）。 */
+    const PLAN = {
+      bundlePath: '/Applications/PicoAide Harness.app',
+      mountPoint: '/tmp/dsh-desktop-user-data/updates/macos/image',
+      sourcePath: '/tmp/dsh-desktop-user-data/updates/macos/image/PicoAide Harness.app',
+      stagingPath: '/Applications/.PicoAide Harness.app.update-2.1.0.app',
+      backupPath: '/Applications/.PicoAide Harness.app.backup-2.1.0.app',
+      bundleIdentifier: 'ai.deepseek.dsh.desktop',
+    }
+
+    it('confirms, prepares, starts the helper first and only then quits', async () => {
+      vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
+      electron.app.isPackaged = true
+      macosUpdate.canInstallMacosInPlace.mockReturnValueOnce(undefined)
+      macosUpdate.prepareMacosInPlaceUpdate.mockResolvedValueOnce({ kind: 'prepared', plan: PLAN })
+      const requestQuit = vi.fn()
+      const { ElectronDesktopRuntime } = await import('../src/electron-runtime.ts')
+      const runtime = new ElectronDesktopRuntime(async () => {})
+      runtime.schedule({ ...spec, requestQuit })
+
+      await runtime.updates.installUpdate('2.1.0', '/tmp/PicoAide-Harness-2.1.0-mac.dmg')
+
+      // 措辞必须是"会自动重启并替换"，因为接下来真的会发生这件事。
+      expect(electron.dialog.showMessageBox).toHaveBeenCalledWith(expect.objectContaining({
+        detail: expect.stringContaining('replace itself with 2.1.0'),
+        buttons: ['Restart and Install', 'Later'],
+      }))
+      expect(electron.shell.openPath).not.toHaveBeenCalled()
+      expect(macosUpdate.prepareMacosInPlaceUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        platform: 'darwin',
+        isPackaged: true,
+        executablePath: process.execPath,
+        installerPath: '/tmp/PicoAide-Harness-2.1.0-mac.dmg',
+        version: '2.1.0',
+        userDataPath: '/tmp/dsh-desktop-user-data',
+      }))
+      expect(macosUpdate.writeMacosUpdateHelper).toHaveBeenCalledWith(expect.objectContaining({
+        plan: PLAN,
+        version: '2.1.0',
+        pid: process.pid,
+        fromVersion: APP_VERSION,
+      }))
+      // 交接的顺序就是"用户不会得到黑屏"的顺序：先确认帮手起来了，再退出宿主。
+      expect(macosUpdate.spawnMacosUpdateHelper.mock.invocationCallOrder[0])
+        .toBeLessThan(requestQuit.mock.invocationCallOrder[0] as number)
+      expect(requestQuit).toHaveBeenCalledWith(0)
+    })
+
+    it('asks nothing and leaves everything alone when the user defers', async () => {
+      vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
+      electron.app.isPackaged = true
+      electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 1, checkboxChecked: false })
+      macosUpdate.canInstallMacosInPlace.mockReturnValueOnce(undefined)
+      const requestQuit = vi.fn()
+      const { ElectronDesktopRuntime } = await import('../src/electron-runtime.ts')
+      const runtime = new ElectronDesktopRuntime(async () => {})
+      runtime.schedule({ ...spec, requestQuit })
+
+      await runtime.updates.installUpdate('2.1.0', '/tmp/PicoAide-Harness-2.1.0-mac.dmg')
+
+      expect(macosUpdate.prepareMacosInPlaceUpdate).not.toHaveBeenCalled()
+      expect(macosUpdate.spawnMacosUpdateHelper).not.toHaveBeenCalled()
+      expect(requestQuit).not.toHaveBeenCalled()
+    })
+
+    it('opens the disk image instead when the environment cannot be updated in place', async () => {
+      vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
+      electron.app.isPackaged = true
+      // 缺省替身 = 'not-packaged'（做不到）⇒ 问都不该问"要不要重启"。
+      const { ElectronDesktopRuntime } = await import('../src/electron-runtime.ts')
+      const runtime = new ElectronDesktopRuntime(async () => {})
+
+      await runtime.updates.installUpdate('2.1.0', '/tmp/PicoAide-Harness-2.1.0-mac.dmg')
+
+      expect(electron.shell.openPath).toHaveBeenCalledWith('/tmp/PicoAide-Harness-2.1.0-mac.dmg')
+      expect(electron.dialog.showMessageBox).toHaveBeenCalledWith(expect.objectContaining({
+        detail: expect.stringContaining('The disk image has opened'),
+      }))
+      expect(macosUpdate.prepareMacosInPlaceUpdate).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the disk image when the image turns out to be unusable in place', async () => {
+      vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
+      electron.app.isPackaged = true
+      macosUpdate.canInstallMacosInPlace.mockReturnValueOnce(undefined)
+      macosUpdate.prepareMacosInPlaceUpdate.mockResolvedValueOnce({ kind: 'fallback', reason: 'insufficient-space' })
+      const requestQuit = vi.fn()
+      const { ElectronDesktopRuntime } = await import('../src/electron-runtime.ts')
+      const runtime = new ElectronDesktopRuntime(async () => {})
+      runtime.schedule({ ...spec, requestQuit })
+
+      await runtime.updates.installUpdate('2.1.0', '/tmp/PicoAide-Harness-2.1.0-mac.dmg')
+
+      expect(electron.shell.openPath).toHaveBeenCalledWith('/tmp/PicoAide-Harness-2.1.0-mac.dmg')
+      expect(macosUpdate.spawnMacosUpdateHelper).not.toHaveBeenCalled()
+      expect(requestQuit).not.toHaveBeenCalled()
+    })
+
+    it('refuses a broken image instead of handing it to anything', async () => {
+      vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
+      electron.app.isPackaged = true
+      macosUpdate.canInstallMacosInPlace.mockReturnValueOnce(undefined)
+      macosUpdate.prepareMacosInPlaceUpdate.mockRejectedValueOnce(new Error('the update image holds com.other.app'))
+      const requestQuit = vi.fn()
+      const { ElectronDesktopRuntime } = await import('../src/electron-runtime.ts')
+      const runtime = new ElectronDesktopRuntime(async () => {})
+      runtime.schedule({ ...spec, requestQuit })
+
+      await expect(runtime.updates.installUpdate('2.1.0', '/tmp/PicoAide-Harness-2.1.0-mac.dmg'))
+        .rejects.toThrow('the update image holds com.other.app')
+      // 既不开磁盘映像（那等于把坏包交给用户），也不退出宿主。
+      expect(electron.shell.openPath).not.toHaveBeenCalled()
+      expect(requestQuit).not.toHaveBeenCalled()
+    })
+
+    it('does not exit when the helper cannot be started', async () => {
+      vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
+      electron.app.isPackaged = true
+      macosUpdate.canInstallMacosInPlace.mockReturnValueOnce(undefined)
+      macosUpdate.prepareMacosInPlaceUpdate.mockResolvedValueOnce({ kind: 'prepared', plan: PLAN })
+      macosUpdate.spawnMacosUpdateHelper.mockRejectedValueOnce(new Error('blocked'))
+      const requestQuit = vi.fn()
+      const { ElectronDesktopRuntime } = await import('../src/electron-runtime.ts')
+      const runtime = new ElectronDesktopRuntime(async () => {})
+      runtime.schedule({ ...spec, requestQuit })
+
+      await expect(runtime.updates.installUpdate('2.1.0', '/tmp/PicoAide-Harness-2.1.0-mac.dmg'))
+        .rejects.toThrow('blocked')
+      expect(requestQuit).not.toHaveBeenCalled()
+    })
+
+    it('runs one in-place update at a time (button and tray share the same paths)', async () => {
+      vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
+      electron.app.isPackaged = true
+      macosUpdate.canInstallMacosInPlace.mockReturnValue(undefined)
+      macosUpdate.prepareMacosInPlaceUpdate.mockImplementation(async () => {
+        // 第一次还在准备（挂载/复制中）时，第二条入口又点了一次。
+        await runtime.updates.installUpdate('2.1.0', '/tmp/PicoAide-Harness-2.1.0-mac.dmg')
+        return { kind: 'fallback', reason: 'insufficient-space' }
+      })
+      const { ElectronDesktopRuntime } = await import('../src/electron-runtime.ts')
+      const runtime = new ElectronDesktopRuntime(async () => {})
+
+      await runtime.updates.installUpdate('2.1.0', '/tmp/PicoAide-Harness-2.1.0-mac.dmg')
+
+      expect(macosUpdate.prepareMacosInPlaceUpdate).toHaveBeenCalledOnce()
+      // 第一条以回落收场 ⇒ 闸门必须放开，用户点第二次仍然能更新。
+      await runtime.updates.installUpdate('2.1.0', '/tmp/PicoAide-Harness-2.1.0-mac.dmg')
+      expect(macosUpdate.prepareMacosInPlaceUpdate).toHaveBeenCalledTimes(2)
+    })
+
+    it('writes the boot marker while mounting the window, so the helper sees it', async () => {
+      vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
+      const { ElectronDesktopRuntime } = await import('../src/electron-runtime.ts')
+      const runtime = new ElectronDesktopRuntime(async () => {})
+      const release = runtime.schedule(spec)
+
+      await runtime.mountScheduled()
+
+      expect(macosUpdate.writeMacosUpdateBootMarker).toHaveBeenCalledWith(
+        '/tmp/dsh-desktop-user-data',
+        APP_VERSION,
+        expect.any(String),
+      )
+      await release()
+    })
+
+    it('reports a failed in-place update once, on the next start', async () => {
+      vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
+      macosUpdate.readMacosUpdateOutcome.mockReturnValueOnce({
+        kind: 'failed',
+        record: {
+          status: 'failed',
+          phase: 'rolling-back',
+          reason: 'application-did-not-start',
+          fromVersion: '1.0.0',
+          toVersion: '2.1.0',
+          targetPath: '/Applications/PicoAide Harness.app',
+          backupPath: '/Applications/.PicoAide Harness.app.backup-2.1.0.app',
+          logPath: '/tmp/dsh-desktop-user-data/updates/macos/apply-update.log',
+        },
+      })
+      const { ElectronDesktopRuntime } = await import('../src/electron-runtime.ts')
+      const runtime = new ElectronDesktopRuntime(async () => {})
+      const release = runtime.schedule(spec)
+
+      await runtime.mountScheduled()
+
+      // 通报挂在窗口上（第一个参数是父窗口）：无父窗口的弹窗可能被自己的窗口盖住。
+      expect(electron.dialog.showMessageBox).toHaveBeenCalledWith(
+        electron.browserWindows.at(-1),
+        expect.objectContaining({
+          type: 'warning',
+          title: 'PicoAide Harness Could Not Be Updated',
+          message: expect.stringContaining('2.1.0'),
+          detail: expect.stringContaining('did not start'),
+        }),
+      )
+      // 提示一次就清记录：每次启动都弹同一句话比不弹更糟。
+      expect(macosUpdate.clearMacosUpdateRecord).toHaveBeenCalledWith('/tmp/dsh-desktop-user-data')
+      await release()
+    })
+
+    it('clears the backup and the record once the new version is the one running', async () => {
+      vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
+      macosUpdate.readMacosUpdateOutcome.mockReturnValueOnce({
+        kind: 'applied',
+        backupPath: '/Applications/.PicoAide Harness.app.backup-2.1.0.app',
+        logPath: '/tmp/dsh-desktop-user-data/updates/macos/apply-update.log',
+      })
+      const { ElectronDesktopRuntime } = await import('../src/electron-runtime.ts')
+      const runtime = new ElectronDesktopRuntime(async () => {})
+      const release = runtime.schedule(spec)
+
+      await runtime.mountScheduled()
+
+      expect(macosUpdate.removeMacosUpdateBackup).toHaveBeenCalledWith(
+        '/Applications/.PicoAide Harness.app.backup-2.1.0.app',
+        expect.any(Function),
+      )
+      expect(electron.dialog.showMessageBox).not.toHaveBeenCalled()
+      await release()
+    })
   })
 
   it('does not reach the installer handoff when the download is cancelled', async () => {

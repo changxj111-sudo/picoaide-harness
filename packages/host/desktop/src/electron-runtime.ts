@@ -57,6 +57,22 @@ import {
   desktopUpdateDialogCopy,
 } from './tray-locale.ts'
 import { downloadDesktopUpdate } from './update-download.ts'
+import {
+  canInstallMacosInPlace,
+  clearMacosUpdateLeftovers,
+  clearMacosUpdateRecord,
+  macAppBundlePath,
+  macosUpdatePaths,
+  prepareMacosInPlaceUpdate,
+  readMacosUpdateOutcome,
+  removeMacosUpdateBackup,
+  runMacosCommand,
+  spawnMacosUpdateHelper,
+  writeMacosUpdateBootMarker,
+  writeMacosUpdateHelper,
+  type MacosInPlaceFallbackReason,
+  type MacosInPlaceUpdatePlan,
+} from './macos-update-install.ts'
 import type { UpdateCheckResult } from './update-checker.ts'
 import { desktopWindowOptions } from './window-options.ts'
 import {
@@ -161,6 +177,23 @@ function isZoomShortcut(input: Electron.Input): 'in' | 'out' | 'reset' | undefin
   return undefined
 }
 
+/**
+ * 上一次 macOS 原地更新失败、需要在启动时通报一次的内容。
+ *
+ * 由 {@link ElectronDesktopRuntime.settleMacosUpdate} 产出（那时窗口还没建），
+ * 由 `reportMacosUpdateFailure` 消费（窗口建好之后）。
+ */
+interface DesktopUpdateFailureNotice {
+  /** 尝试更新的目标版本。 */
+  readonly toVersion: string
+  /** 帮手写下的失败码（未登记的原样显示）。 */
+  readonly reason: string
+  /** 帮手日志路径。 */
+  readonly logPath: string
+  /** 旧版本备份路径（没留下时为空串）。 */
+  readonly backupPath: string
+}
+
 /** Native adapter used by the PicoAide Harness launcher and owned by its Cordis shell plugin. */
 export class ElectronDesktopRuntime implements DesktopRuntime {
   readonly platform: DesktopPlatform
@@ -210,6 +243,8 @@ export class ElectronDesktopRuntime implements DesktopRuntime {
   private mountTask: Promise<void> | undefined
   private release: (() => Promise<void>) | undefined
   private quitting = false
+  /** 已经有一次 macOS 原地更新在走（界面按钮与托盘项可能各点一次）。 */
+  private macosUpdateInFlight = false
   private readonly trayItems = new Map<symbol, DesktopTrayItem>()
   private diagnosticExport: Promise<void> | undefined
   private directoryPickTask: Promise<string | null> | undefined
@@ -716,8 +751,9 @@ export class ElectronDesktopRuntime implements DesktopRuntime {
   /**
    * Hand an already-downloaded installer to the platform installation flow.
    *
-   * Windows 启动下载好的 NSIS 安装包并退出;macOS 打开 DMG 让用户拖进
-   * Applications;Linux 只能提示用户手动替换 AppImage。
+   * Windows 启动下载好的 NSIS 安装包并退出;macOS **原地替换**应用包并自动重开
+   * （做不到时回落到打开 DMG 让用户自己拖,与改造前逐字一致）;Linux 只能提示用户
+   * 手动替换 AppImage。
    * @param version - canonical version being installed.
    * @param installerPath - absolute path of the verified installer.
    */
@@ -737,18 +773,7 @@ export class ElectronDesktopRuntime implements DesktopRuntime {
     }
 
     if (this.platform === 'darwin') {
-      const copy = desktopUpdateDialogCopy(this.currentLocale)
-      const openError = await shell.openPath(installerPath)
-      if (openError !== '') throw new Error(`dsh-plugin-desktop: failed to open update disk image: ${openError}`)
-      await dialog.showMessageBox({
-        type: 'info',
-        title: copy.downloadedTitle(this.productName),
-        message: copy.downloadedMessage(version, this.productName),
-        detail: copy.darwinOpenedDetail(this.productName),
-        buttons: [copy.confirm],
-        defaultId: 0,
-        noLink: true,
-      })
+      await this.installMacosUpdate(version, installerPath)
       return
     }
 
@@ -770,6 +795,181 @@ export class ElectronDesktopRuntime implements DesktopRuntime {
     await this.launchWindowsUpdateInstaller(installerPath)
     this.quitting = true
     spec.requestQuit(0)
+  }
+
+  /**
+   * macOS 的安装：能原地替换就"确认 → 挂载并核对影像 → 起帮手 → 退出"，
+   * 不能就回落到"打开磁盘映像,用户自己拖"（改造前的唯一口径）。
+   *
+   * **先问后做**：便宜的判据（{@link canInstallMacosInPlace}）在弹窗之前跑,所以
+   * 用户看到的措辞与接下来真的会发生的事一致 —— 做不到的时候绝不说"会自动替换"。
+   * 确认之后的准备工作（挂载 + 身份/版本/TeamID/空间核对）仍可能失败:
+   * - 环境原因（空间不够）⇒ 同样回落成"打开磁盘映像";
+   * - 载荷原因（挂不上/里面不是同一个应用/版本对不上）⇒ **抛错**,由协调器变成
+   *   用户可见的失败（`lastError = 'invalid-artifact'`）,绝不把来路不明的包交出去。
+   * @param version - canonical version being installed.
+   * @param installerPath - absolute path of the verified disk image.
+   */
+  private async installMacosUpdate(version: string, installerPath: string): Promise<void> {
+    // 界面按钮与托盘项是两条互相独立的入口：第二次点进来时第一次可能已经在挂载/复制，
+    // 两条流程会抢同一个挂载点与暂存路径。走到"交给帮手"（= 要退出应用）之前，失败一律
+    // 允许重试 ⇒ 标志只在真的交接之后留下。
+    if (this.macosUpdateInFlight) return
+    this.macosUpdateInFlight = true
+    try {
+      await this.startMacosUpdate(version, installerPath)
+    } finally {
+      if (!this.quitting) this.macosUpdateInFlight = false
+    }
+  }
+
+  /**
+   * {@link installMacosUpdate} 的实做（在"只有一个在走"的闸门之内）。
+   * @param version - canonical version being installed.
+   * @param installerPath - absolute path of the verified disk image.
+   */
+  private async startMacosUpdate(version: string, installerPath: string): Promise<void> {
+    const copy = desktopUpdateDialogCopy(this.currentLocale)
+    const blocker = canInstallMacosInPlace({
+      platform: this.platform,
+      isPackaged: app.isPackaged,
+      executablePath: process.execPath,
+    })
+    if (blocker === undefined) {
+      const result = await dialog.showMessageBox({
+        type: 'info',
+        title: copy.downloadedTitle(this.productName),
+        message: copy.downloadedMessage(version, this.productName),
+        detail: copy.darwinInstallDetail(version, this.productName),
+        buttons: [copy.winRestart, copy.winLater],
+        defaultId: 1,
+        cancelId: 1,
+        noLink: true,
+      })
+      if (result.response !== 0) return
+      const preparation = await prepareMacosInPlaceUpdate({
+        platform: this.platform,
+        isPackaged: app.isPackaged,
+        executablePath: process.execPath,
+        installerPath,
+        version,
+        userDataPath: app.getPath('userData'),
+        log: message => this.logError(`dsh-plugin-desktop: macos update: ${message}`),
+      }).catch((cause: unknown) => {
+        this.logError(`dsh-plugin-desktop: macos update preparation failed: ${cause instanceof Error ? cause.message : String(cause)}`)
+        throw cause
+      })
+      if (preparation.kind === 'fallback') return await this.openUpdateDiskImage(version, installerPath, preparation.reason)
+      await this.handOffToMacosUpdateHelper(version, preparation.plan)
+      return
+    }
+    await this.openUpdateDiskImage(version, installerPath, blocker)
+  }
+
+  /**
+   * 回落到改造前的交付口径：打开磁盘映像,并告诉用户怎么手动完成。
+   * @param version - canonical version being installed.
+   * @param installerPath - absolute path of the verified disk image.
+   * @param reason - why the in-place path was not taken (diagnostics only).
+   */
+  private async openUpdateDiskImage(
+    version: string,
+    installerPath: string,
+    reason: MacosInPlaceFallbackReason,
+  ): Promise<void> {
+    this.logError(`dsh-plugin-desktop: macos in-place update unavailable (${reason}); opening the disk image instead`)
+    const copy = desktopUpdateDialogCopy(this.currentLocale)
+    const openError = await shell.openPath(installerPath)
+    if (openError !== '') throw new Error(`dsh-plugin-desktop: failed to open update disk image: ${openError}`)
+    await dialog.showMessageBox({
+      type: 'info',
+      title: copy.downloadedTitle(this.productName),
+      message: copy.downloadedMessage(version, this.productName),
+      detail: copy.darwinOpenedDetail(this.productName),
+      buttons: [copy.confirm],
+      defaultId: 0,
+      noLink: true,
+    })
+  }
+
+  /**
+   * 落地帮手脚本、起进程,确认 spawn 成功之后再退出宿主。
+   *
+   * 顺序不可交换:帮手是**唯一**能把新版本装上去并把应用重新打开的东西。先退出再发现
+   * 帮手没起来,用户得到的是"应用关了、什么都没发生、也没重新打开"。与 Windows 分支
+   * （`launchWindowsUpdateInstaller`）同一口径。
+   * @param version - canonical version being installed.
+   * @param plan - prepared replacement plan.
+   */
+  private async handOffToMacosUpdateHelper(
+    version: string,
+    plan: MacosInPlaceUpdatePlan,
+  ): Promise<void> {
+    const spec = this.scheduled
+    if (spec === undefined) throw new Error('dsh-plugin-desktop: no active shell can exit for update installation')
+    const helper = writeMacosUpdateHelper({
+      plan,
+      userDataPath: app.getPath('userData'),
+      version,
+      pid: process.pid,
+      fromVersion: PRODUCT_VERSION,
+    })
+    await spawnMacosUpdateHelper(helper, (error) => {
+      this.logError(`dsh-plugin-desktop: macos update helper failed after launch: ${error.message}`)
+    })
+    this.quitting = true
+    spec.requestQuit(0)
+  }
+
+  /**
+   * 启动路径上的两件事：写启动标记（帮手在等它）+ 结清上一次更新。
+   *
+   * 帮手替换完成后等这个标记才承认成功（等不到就回滚）,所以它必须**尽早**写下来
+   * （原生窗口还没建就得写）。上一次更新的结论也在同一处结清：生效的删备份,
+   * 没生效的把内容**返回给调用方**延后到窗口建好再弹 —— 更新失败而界面一声不响是
+   * 这类功能最坏的形态,而无父窗口的弹窗在 macOS 上可能被自己的窗口盖住。
+   * @returns 需要通报的失败内容;没有失败时 undefined。
+   */
+  private settleMacosUpdate(): DesktopUpdateFailureNotice | undefined {
+    if (this.platform !== 'darwin') return undefined
+    const userDataPath = app.getPath('userData')
+    writeMacosUpdateBootMarker(userDataPath, PRODUCT_VERSION, new Date().toISOString())
+    const bundlePath = macAppBundlePath(process.execPath)
+    if (bundlePath !== undefined) {
+      clearMacosUpdateLeftovers(
+        bundlePath,
+        macosUpdatePaths(userDataPath).mountPoint,
+        runMacosCommand,
+        message => this.logError(`dsh-plugin-desktop: macos update: ${message}`),
+      )
+    }
+    const outcome = readMacosUpdateOutcome(userDataPath, PRODUCT_VERSION)
+    if (outcome === undefined) return undefined
+    clearMacosUpdateRecord(userDataPath)
+    if (outcome.kind === 'applied') {
+      removeMacosUpdateBackup(outcome.backupPath, message => this.logError(`dsh-plugin-desktop: macos update: ${message}`))
+      return undefined
+    }
+    return {
+      toVersion: outcome.record.toVersion,
+      reason: outcome.record.reason,
+      logPath: outcome.record.logPath,
+      backupPath: outcome.record.backupPath,
+    }
+  }
+
+  /** 把上一次失败的更新通报一次（挂在新窗口上,保证用户看得见）。 */
+  private reportMacosUpdateFailure(window: BrowserWindow, notice: DesktopUpdateFailureNotice): void {
+    const copy = desktopUpdateDialogCopy(this.currentLocale)
+    void dialog.showMessageBox(window, {
+      type: 'warning',
+      title: copy.darwinUpdateFailedTitle(this.productName),
+      message: copy.darwinUpdateFailedMessage(notice.toVersion, this.productName),
+      detail: copy.darwinUpdateFailedDetail(notice.reason, notice.logPath, notice.backupPath),
+      buttons: [copy.confirm],
+      defaultId: 0,
+      noLink: true,
+    }).catch(() => undefined)
   }
 
   /** Start the downloaded NSIS installer before releasing the current process. */
@@ -840,6 +1040,10 @@ export class ElectronDesktopRuntime implements DesktopRuntime {
     beforeInteractive: (() => void) | undefined,
   ): Promise<() => Promise<void>> {
     this.setLocalePreference(spec.readLocalePreference())
+    // 原生窗口起来之前的**第一件**事（macOS）：写"本版本已启动"的标记（帮手在等它，
+    // 等不到会回滚刚装好的版本），并结清上一次更新的结论。放在语言偏好之后，是为了让
+    // 提示文案用用户选的语言；提示本身延后到窗口建好再弹（见下）。
+    const updateFailure = this.settleMacosUpdate()
     const icon = nativeImage.createFromPath(spec.iconPath)
     if (icon.isEmpty()) {
       throw new Error(`dsh-plugin-desktop: failed to load application icon ${spec.iconPath}`)
@@ -856,6 +1060,9 @@ export class ElectronDesktopRuntime implements DesktopRuntime {
     // 发布版关掉 DevTools（`app.isPackaged` 为准，开发态保持可用）——
     // e2e/探针走 `--remote-debugging-port` 的 Chromium CDP，不依赖它。
     const window = new BrowserWindow(desktopWindowOptions(spec, icon, this.platform, app.isPackaged))
+    // 上一次更新失败的通报挂在新窗口上（sheet）：无父窗口的原生弹窗可能被自己的窗口盖住，
+    // 而"更新失败但没人看见"正是这个功能最坏的形态。
+    if (updateFailure !== undefined) this.reportMacosUpdateFailure(window, updateFailure)
     // P1-4: deny every renderer permission request by default. Electron
     // auto-grants camera/mic/geolocation etc. when no handler is set, which
     // an untrusted web surface must never receive. The embedded browser

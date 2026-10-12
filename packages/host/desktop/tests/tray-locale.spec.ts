@@ -167,6 +167,11 @@ describe('native copy added by the 2026-09-16 i18n pass', () => {
       zh.checkFailedTitle('P'), zh.checkFailedMessage('P'), zh.checkFailedDetail,
       zh.upToDateTitle('P'), zh.upToDateMessage('P'), zh.upToDateDetail('1.0.0'),
       zh.availableTitle('P'), zh.availableMessage('1.0.0', 'P'), zh.availableDetail,
+      // 2026-10-09 原地更新：确认框与"上一次没成"的启动提示同样必须双语。
+      zh.darwinInstallDetail('1.0.0', 'P'), zh.darwinUpdateFailedTitle('P'),
+      zh.darwinUpdateFailedMessage('1.0.0', 'P'),
+      zh.darwinUpdateFailedDetail('verification-failed', '/tmp/log', '/tmp/backup'),
+      zh.darwinUpdateFailureReason('application-did-not-start'), zh.darwinUpdateFailureReason(''),
     ]) {
       expect(value, JSON.stringify(value)).toMatch(CJK)
     }
@@ -175,9 +180,31 @@ describe('native copy added by the 2026-09-16 i18n pass', () => {
       en.checkFailedTitle('P'), en.checkFailedMessage('P'), en.checkFailedDetail,
       en.upToDateTitle('P'), en.upToDateMessage('P'), en.upToDateDetail('1.0.0'),
       en.availableTitle('P'), en.availableMessage('1.0.0', 'P'), en.availableDetail,
+      en.darwinInstallDetail('1.0.0', 'P'), en.darwinUpdateFailedTitle('P'),
+      en.darwinUpdateFailedMessage('1.0.0', 'P'),
+      en.darwinUpdateFailedDetail('verification-failed', '/tmp/log', '/tmp/backup'),
+      en.darwinUpdateFailureReason('application-did-not-start'), en.darwinUpdateFailureReason(''),
     ]) {
       expect(value, JSON.stringify(value)).not.toMatch(CJK)
     }
+    // 失败详情必须同时给出"为什么"与现场（日志/备份路径），否则用户只有一句"失败了"。
+    expect(zh.darwinUpdateFailedDetail('copy-failed', '/tmp/log', '/tmp/backup'))
+      .toContain('/tmp/log')
+    expect(zh.darwinUpdateFailedDetail('copy-failed', '/tmp/log', '/tmp/backup'))
+      .toContain('/tmp/backup')
+    // 没有备份时不留一个空的"备份："行。
+    expect(zh.darwinUpdateFailedDetail('copy-failed', '/tmp/log', '')).not.toContain('备份：\n')
+    // 下载完成的那条提示不得预告"安装时会打开磁盘映像"（2026-10-09 起 macOS 的常规
+    // 路径是原地替换 + 自动重开；磁盘映像只在做不到时才打开）。
+    for (const [locale, copy] of [['zh', zh], ['en', en]] as const) {
+      expect(copy.readyDetail('darwin', '/tmp/x.dmg', 'P'), locale).not.toContain('x.dmg')
+      expect(copy.readyDetail('darwin', '/tmp/x.dmg', 'P').length).toBeGreaterThan(0)
+    }
+    expect(zh.readyDetail('darwin', '/tmp/x.dmg', 'P')).not.toContain('磁盘映像')
+    expect(en.readyDetail('darwin', '/tmp/x.dmg', 'P')).not.toContain('disk image')
+    // 未登记的码原样回显（可诊断），绝不显示成空白。
+    expect(zh.darwinUpdateFailureReason('brand-new-code')).toBe('brand-new-code')
+    expect(en.darwinUpdateFailureReason('brand-new-code')).toBe('brand-new-code')
     // 产品名/版本号必须由 runtime 面传入（渠道构建下即渠道名）。
     expect(zh.availableMessage('9.9.9', 'Acme AI')).toContain('Acme AI 9.9.9')
     expect(en.upToDateDetail('9.9.9')).toContain('9.9.9')

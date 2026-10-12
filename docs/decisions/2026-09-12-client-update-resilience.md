@@ -137,3 +137,13 @@
    没有组件级用例（本包测试跑在 node 环境、无 jsdom/testing-library），只由纯函数对拍
    与宿主用例覆盖。
 
+## 修订（2026-10-09）：macOS 的"安装"这一步不再是"打开磁盘映像"
+
+本文件 §4 与 §5 里"Windows 启动下载好的 NSIS 并退出、**macOS 打开 DMG**、Linux 提示替换
+AppImage"这一行，macOS 那半句**已被替换**：macOS 现在是**原地替换应用包并自动重开**，只有
+在环境不支持时才回落成"打开磁盘映像让用户自己拖"（与改造前逐字一致）。
+
+**检查/下载/续传/单源状态/失败分类这一整条链路没有任何改动** —— 本次只改了
+`electron-runtime.ts` 的 `installUpdate` 在 darwin 上的落地动作（外加启动路径上的
+"上一次更新成没成"通报）。决策、判据、边界与认账见
+`docs/decisions/2026-10-09-macos-in-place-update.md`。

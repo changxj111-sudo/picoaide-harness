@@ -37,7 +37,7 @@ PicoAide Harness 把 DeepSeek Harness 的本地智能体、Host 服务、插件�
 
 | 自动化任务 | 设置 |
 | --- | --- |
-| <img src="assets/screenshots/desktop-main.png" alt="自动化任务（官方 Schedule）" width="100%"> | <img src="assets/screenshots/desktop-settings.png" alt="设置" width="100%"> |
+| <img src="assets/screenshots/desktop-schedule.png" alt="自动化任务（官方 Schedule）" width="100%"> | <img src="assets/screenshots/desktop-settings.png" alt="设置" width="100%"> |
 
 ### 管理后台
 

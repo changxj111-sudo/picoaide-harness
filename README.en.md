@@ -37,7 +37,7 @@ PicoAide Harness packages DeepSeek Harness local agents, the Host service, its p
 
 | Automation tasks | Settings |
 | --- | --- |
-| <img src="assets/screenshots/desktop-main.png" alt="Automation tasks (upstream Schedule)" width="100%"> | <img src="assets/screenshots/desktop-settings.png" alt="Settings" width="100%"> |
+| <img src="assets/screenshots/desktop-schedule.png" alt="Automation tasks (upstream Schedule)" width="100%"> | <img src="assets/screenshots/desktop-settings.png" alt="Settings" width="100%"> |
 
 ### Admin console
 

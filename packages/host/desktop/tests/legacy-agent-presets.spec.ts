@@ -398,10 +398,17 @@ describe('legacy agent presets on the real desktop profile', () => {
 
       // 2026-10-19 第三轮 RR3-04：preset 的 legacy delegation 行必须是 disabled（loader
       // 语义，不是 YAML 文本）；Team 工具在 agent 侧接管。
-      const inventory = await ctx.agentPresets.compositionInventory()
+      const inventoryApi = ctx.agentPresets as unknown as {
+        compositionInventory: () => Promise<Array<{
+          id: string
+          broken?: string
+          rows?: Array<{ id?: string, disabled?: boolean }>
+        }>>
+      }
+      const inventory = await inventoryApi.compositionInventory()
       const standard = inventory.find(item => item.id === 'standard')
       expect(standard?.broken).toBeUndefined()
-      const rows = (standard?.rows ?? []) as Array<{ id?: string, disabled?: boolean }>
+      const rows = standard?.rows ?? []
       const legacyIds = new Set(['tool-subagent-control', 'tool-subagent-list-agents', 'tool-subagent', 'tool-subagent-fork'])
       // Loader 可能把 disabled 行从 mounted rows 里省略；两种形态都合法，
       // 唯一不允许的是“存在且 enabled”。

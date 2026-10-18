@@ -787,7 +787,7 @@ describe('反向 oracle：清单必须覆盖产物（第三轮审计 P-1，2026-
     }
   })
 
-  it('第三轮审计实测的 6 条"无别表兜底"缺口逐条都不再静默', () => {
+  it('第三轮审计实测的 5 条"无别表兜底"缺口逐条都不再静默', () => {
     // 审计表里列出的 8 条（`browser/lib/surface.js`、`host-locale/lib/loopback.js`、
     // `browser|account-card|foot-menu` 的 `lib/client.js`、`account-card|cron` 的
     // `lib/invariant.js`）—— 这一轮它们被真实需要面反推出来了。
@@ -797,7 +797,6 @@ describe('反向 oracle：清单必须覆盖产物（第三轮审计 P-1，2026-
       'node_modules/@picoaide/dsh-browser/lib/client.js',
       'node_modules/@picoaide/dsh-account-card/lib/client.js',
       'node_modules/@picoaide/dsh-foot-menu/lib/client.js',
-      'node_modules/@picoaide/dsh-cron/lib/client.js',
     ]
     const effective = new Set(effectivePackagedRuntimeEntries())
     for (const entry of audited) expect(effective, `${entry} 不在生效清单里`).toContain(entry)

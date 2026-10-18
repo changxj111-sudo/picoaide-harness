@@ -250,9 +250,6 @@ export const REQUIRED_PACKAGED_RUNTIME_ENTRIES = [
   'node_modules/@picoaide/dsh-browser/lib/guard.js',
   'node_modules/@picoaide/dsh-browser/package.json',
   'node_modules/@picoaide/dsh-browser/cordis.patch.yml',
-  'node_modules/@picoaide/dsh-cron/lib/index.js',
-  'node_modules/@picoaide/dsh-cron/lib/client.js',
-  'node_modules/@picoaide/dsh-cron/package.json',
   // 侧边栏底部「更多」行（2026-09-21 并道改造）：五个面板插件的底部条目都登记进它
   // 提供的 `picoFootMenu` 服务，`lib/client.js` 就是那个注册了**唯一**底部座位占用者
   // 的客户端 bundle。它**没有** `lib/invariant.js`（本包没有伴生不变量行），所以这里
@@ -1444,7 +1441,6 @@ export const REQUIRED_WORKSPACE_PACKAGE_COVERAGE: readonly WorkspacePackageCover
   // 扁平清单里一条都没有 ⇒ `flattened: 0` 是有意的，不是漏登记。
   { package: 'dsh-connectors', flattened: 0, effective: 6, library: 4 },
   // cron 的 `cordis.patch.yml` 只有 profile 锚点表覆盖（扁平清单 4 条 ⇒ 生效 5 条）。
-  { package: 'dsh-cron', flattened: 3, effective: 4, library: 2 },
   // enterprise 在 `REQUIRED_ASAR_EXPORTS` 里有 15 条 + 锚点表的 `cordis.patch.yml`。
   // 14 条（原 13 条 + R16B-01 新增的 `session-identity`）：account-card 的余额快照要盖
   // 会话身份章，而身份口径的唯一实现在 enterprise ⇒ 多一条真实的跨包 specifier。
@@ -1463,7 +1459,7 @@ export const REQUIRED_WORKSPACE_PACKAGE_COVERAGE: readonly WorkspacePackageCover
  *
  * 2026-09-29：122 → 129（语音输入默认开启，+7 条 voice-input 链）。
  */
-export const REQUIRED_WORKSPACE_PACKAGE_COVERAGE_MANIFEST_FLOOR = 122
+export const REQUIRED_WORKSPACE_PACKAGE_COVERAGE_MANIFEST_FLOOR = 118
 // 111 → 114（2026-09-23 合并 origin/master 的 #138）：那条线给必需清单加了
 // `@deepseek-ai/dsh-plugin-manager` 的 3 个 `lib/**` 条目，生效清单随之增长 3 条。
 // 棘轮语义是"贴住下限、只允许上调" ⇒ 合并后同步上调（删条目仍会打破等式）。
@@ -1986,8 +1982,6 @@ export const REQUIRED_PROFILE_PATCH_ANCHORS: readonly string[] = [
   'node_modules/@picoaide/dsh-browser/cordis.patch.yml',
   'node_modules/@picoaide/dsh-wasm-apps-host/package.json',
   'node_modules/@picoaide/dsh-wasm-apps-host/cordis.patch.yml',
-  'node_modules/@picoaide/dsh-cron/package.json',
-  'node_modules/@picoaide/dsh-cron/cordis.patch.yml',
   'node_modules/dsh-memory-evolve/package.json',
   'node_modules/dsh-memory-evolve/cordis.patch.yml',
 ]

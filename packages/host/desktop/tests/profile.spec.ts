@@ -116,7 +116,6 @@ describe('desktop profile composition', {
       '@picoaide/dsh-connectors',
       '@picoaide/dsh-browser',
       'dsh-memory-evolve',
-      '@picoaide/dsh-cron',
       '@deepseek-ai/dsh-experimental-voice-input-bundle',
       'third-party-one',
       'third-party-two',
@@ -152,7 +151,6 @@ describe('desktop profile composition', {
       '@picoaide/dsh-connectors',
       '@picoaide/dsh-browser',
       'dsh-memory-evolve',
-      '@picoaide/dsh-cron',
       '@deepseek-ai/dsh-experimental-voice-input-bundle',
       'third-party-plugin',
     ])
@@ -193,7 +191,6 @@ describe('desktop profile composition', {
       '@picoaide/dsh-connectors',
       '@picoaide/dsh-browser',
       'dsh-memory-evolve',
-      '@picoaide/dsh-cron',
       '@deepseek-ai/dsh-experimental-voice-input-bundle',
     ])
   })

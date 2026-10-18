@@ -66,4 +66,4 @@ corepack yarn workspace dsh-plugin-desktop test  # 单测(等)
 
 ## 8. 客户端本地配置(桌面侧,见仓库根文档)
 
-桌面客户端的本地设置由官方 DSH settings 与自研插件(enterprise/connectors/cron/browser)负责,见 `packages/host/*` 与 `packages/client/*`;服务端不持有客户端本地设置。
+桌面客户端的本地设置由官方 DSH settings 与自研插件(enterprise/connectors/browser)负责,见 `packages/host/*` 与 `packages/client/*`;服务端不持有客户端本地设置。

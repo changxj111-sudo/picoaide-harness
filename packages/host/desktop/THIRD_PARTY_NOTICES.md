@@ -379,7 +379,6 @@ the package names, versions, and licenses for transparency.
 | @picoaide/dsh-account-card | 0.1.0 | MIT |
 | @picoaide/dsh-browser | 0.1.0 | MIT |
 | @picoaide/dsh-connectors | 0.1.0 | MIT |
-| @picoaide/dsh-cron | 0.1.0 | MIT |
 | @picoaide/dsh-enterprise | 0.1.0 | MIT |
 | @picoaide/dsh-foot-menu | 0.1.0 | MIT |
 | @picoaide/dsh-host-home | 0.1.0 | MIT |

@@ -21,7 +21,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import { createFootMenuService, installFootMenu } from './contract.ts'
 import { FootMenuRow } from './FootMenuRow.tsx'
-import { en, setActiveLocale, type FootMenuKey, zh } from './locales.ts'
+import { en, setActiveLocale, t, type FootMenuKey, zh } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -46,6 +46,20 @@ export const inject = ['slots', 'locale']
 // contract.d.ts —— 消费者编译期拿不到 `ctx.picoFootMenu`（TS2339），而运行时
 // 一切正常（最难查的一类漂移）。
 export type { FootMenuEntry, FootMenuService } from './contract.ts'
+
+/**
+ * Open the official Schedule manager (registered in `main` under key
+ * `schedules`). The official sidebar row is hidden by this plugin, so the
+ * click is the supported way to select that panel without duplicating it.
+ */
+function openOfficialSchedulePanel(): void {
+  if (typeof document === 'undefined') return
+  const rows = [...document.querySelectorAll('button')].filter(button =>
+    [...button.classList].some(token => token === 'panelRow' || token.endsWith('_panelRow')))
+  const label = t('footMenu.schedule')
+  const target = rows.find(button => button.getAttribute('aria-label') === label) ?? rows[0]
+  target?.click()
+}
 
 /**
  * Register the foot lane: the one sidebar foot occupant plus the `picoFootMenu`
@@ -102,6 +116,31 @@ export function apply(ctx: ClientContext): void {
   // 用 `ctx.picoFootMenu.add(...)` 登记，注销函数由它们的 `ctx.effect` 调用。
   const service = createFootMenuService()
   ctx.effect(() => installFootMenu(ctx, service), 'foot-menu: menu registry')
+
+  // 官方「自动化任务」（0.2.1）：取代自研 cron，入口固定在「更多」浮层的原来第一位
+  // （order -10）。官方自己在 `sidebar.panellist` 还渲染一行同名入口；本插件把它隐藏，
+  // 保证同一功能只有这一个入口、位置不变。
+  ctx.effect(() => service.add({
+    id: 'schedules',
+    order: -10,
+    title: () => t('footMenu.schedule'),
+    activate: openOfficialSchedulePanel,
+  }), 'foot-menu: official automation entry')
+  ctx.effect(() => {
+    if (typeof document === 'undefined') return () => {}
+    const labels = new Set(['自动化任务', 'Automation tasks'])
+    const hide = (): void => {
+      for (const button of document.querySelectorAll('button')) {
+        const tokens = [...button.classList]
+        if (!tokens.some(token => token === 'panelRow' || token.endsWith('_panelRow'))) continue
+        if (labels.has(button.getAttribute('aria-label') ?? '')) button.style.display = 'none'
+      }
+    }
+    hide()
+    const observer = new MutationObserver(hide)
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, 'foot-menu: hide duplicate official schedule row')
 
   // 唯一占用者：整个底部功能区只剩这一行（账目卡与设置各自在别的座位）。
   ctx.effect(

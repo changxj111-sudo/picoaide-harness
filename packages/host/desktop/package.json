@@ -311,7 +311,6 @@
     "@picoaide/dsh-account-card": "workspace:*",
     "@picoaide/dsh-browser": "workspace:*",
     "@picoaide/dsh-connectors": "workspace:*",
-    "@picoaide/dsh-cron": "workspace:*",
     "@picoaide/dsh-enterprise": "workspace:*",
     "@picoaide/dsh-foot-menu": "workspace:*",
     "@picoaide/dsh-host-home": "workspace:*",

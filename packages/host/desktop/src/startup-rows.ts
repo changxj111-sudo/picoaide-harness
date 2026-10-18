@@ -79,7 +79,6 @@ export const REQUIRED_DESKTOP_ROWS = [
   'picoaide-error-reporting',
   // 自研业务面
   'pico-connectors',
-  'pico-cron',
   'pico-browser',
   'pico-wasm-apps-host',
   'picoaide-account-card',

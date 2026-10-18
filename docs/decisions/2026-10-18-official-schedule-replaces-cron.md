@@ -68,6 +68,16 @@ foot-menu 的同一个 DOM effect 还负责另外两处官方 chrome：
 | 会话搜索 | `dsh-experimental-session-search` | `optional-session-search` 组（sqlite 索引 `:memory:`，首次搜索时打开 + `tool-session-query`） |
 | 随对话更新的标题 | `dsh-experimental-session-titles-bundle` | 禁用 `session-title-llm`，插入 `session-title-all-prompts-llm` |
 | Ralph 循环 | `dsh-experimental-ralph-bundle` | `optional-ralph` 组（`workflow-ptc` + `tool-ralph`，`maxRounds: 64`） |
+| DSH 徽章技能 | `dsh-experimental-badge-skill-bundle` | `skill-badge`（`dsh-badge` skill；已打补丁改为读产品/OEM 名，见下） |
+
+徽章技能的品牌补丁（`patches/dsh-skill-badge@0.2.1-rc.2.patch`）：
+
+- skill 的 description / 正文不再出现 “powered by dsh”、DeepSeek 鲸鱼 logo 或上游项目链接；
+- 运行时**惰性**从 `ctx.get('desktopRuntime').productName` 取当前产品/OEM 名（窗口调度后才发布，
+  回退 `PICOAI_PRODUCT_NAME` 环境变量，最后回退 `PicoAide Harness`），生成
+  `Powered by <OEM>` 的 shields.io 徽章（无 logo、无外链）；
+- 不再引导使用上游 `dsh-badge.png`（该 PNG 含上游鲸鱼标志，本产品不使用），并在
+  electron-builder 的 `build.files` 里排除该 PNG，避免它随包分发。
 
 注意：
 

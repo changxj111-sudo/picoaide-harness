@@ -1,0 +1,138 @@
+diff --git a/lib/index.js b/lib/index.js
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -1,10 +1,8 @@
+-import { readFile } from "node:fs/promises";
+ import { fileURLToPath } from "node:url";
+ import { BUNDLED_SKILL_RANK } from "@deepseek-ai/dsh-skill";
+ //#region lib/types/index.js
+ /**
+-* Bundled `dsh-badge` skill provider.
+-*
++* Bundled badge skill provider, branded with the product (OEM) name.
+ * @module @deepseek-ai/dsh-skill-badge
+ */
+ const PROVIDER_NAME = "dsh-badge";
+@@ -13,41 +11,92 @@
+ 	kind: "directory",
+ 	path: fileURLToPath(new URL("../assets/", import.meta.url))
+ };
+-const CANDIDATE = {
+-	name: "dsh-badge",
+-	description: "Add the official “powered by dsh” badge to documents, pull requests, merge requests, and other content produced with DeepSeek Harness. Use whenever creating a pull request or merge request. Also use when the user asks for a dsh badge, powered-by-dsh attribution, or a reusable dsh badge asset or snippet.",
+-	invocation: {
+-		modelInvocable: true,
+-		userInvocable: true
+-	},
+-	provider: PROVIDER_NAME,
+-	source: "bundled",
+-	resourceBase: RESOURCE_BASE,
+-	rank: BUNDLED_SKILL_RANK,
+-	locator: SKILL_BODY_URL
+-};
+-const provider = {
+-	name: PROVIDER_NAME,
+-	list: () => Promise.resolve([CANDIDATE]),
+-	async get(_candidate) {
+-		return {
+-			name: CANDIDATE.name,
+-			description: CANDIDATE.description,
+-			invocation: CANDIDATE.invocation,
+-			provider: CANDIDATE.provider,
+-			source: CANDIDATE.source,
+-			resourceBase: RESOURCE_BASE,
+-			content: await readFile(SKILL_BODY_URL, "utf8")
+-		};
+-	}
+-};
++const FALLBACK_PRODUCT_NAME = "PicoAide Harness";
++/** Resolve the product/OEM name composed into the running desktop profile. */
++function productName(ctx) {
++	try {
++		const runtime = ctx?.get?.("desktopRuntime");
++		const value = runtime?.productName;
++		if (typeof value === "string" && value.trim() !== "") return value.trim();
++	} catch {}
++	const env = typeof process === "undefined" ? undefined : process.env.PICOAI_PRODUCT_NAME;
++	return typeof env === "string" && env.trim() !== "" ? env.trim() : FALLBACK_PRODUCT_NAME;
++}
++/** Shields.io message segment for an arbitrary product name. */
++function encodedName(name) {
++	return encodeURIComponent(name).replaceAll("-", "%2D").replaceAll("_", "%5F");
++}
++function description(name) {
++	const article = /^[aeiou]/iu.test(name) ? "an" : "a";
++	return `Add the “Powered by ${name}” badge to documents, pull requests, merge requests, and other content produced with ${name}. Use whenever creating a pull request or merge request. Also use when the user asks for ${article} ${name} badge, powered-by attribution, or a reusable badge asset or snippet.`;
++}
++function skillContent(name) {
++	const url = `https://img.shields.io/badge/Powered_by-${encodedName(name)}-4D6BFE?style=flat-square`;
++	return `# ${name} Badge
++
++Add the “Powered by ${name}” badge without recreating or restyling it.
++
++## Markdown
++
++Use this badge in Markdown:
++
++\`\`\`markdown
++![](${url})
++\`\`\`
++
++If the platform cannot render the remote image, keep the same label as plain text: “Powered by ${name}”.
++
++## Usage rules
++
++- Preserve the badge's 121×20 dimensions and aspect ratio.
++- Place the badge at the end of the attributed document or section unless the user specifies another position.
++- Do not substitute another color, logo, label, or project URL.
++- Do not use any upstream wordmark or logo for this badge.
++`;
++}
++function candidateFor(product) {
++	return {
++		name: "dsh-badge",
++		description: description(product),
++		invocation: {
++			modelInvocable: true,
++			userInvocable: true
++		},
++		provider: PROVIDER_NAME,
++		source: "bundled",
++		resourceBase: RESOURCE_BASE,
++		rank: BUNDLED_SKILL_RANK,
++		locator: SKILL_BODY_URL
++	};
++}
++function createProvider(ctx) {
++	// Resolve the product name lazily: the desktop shell schedules its window
++	// (and publishes `productName` on the runtime) after this provider applies.
++	return {
++		name: PROVIDER_NAME,
++		list: () => Promise.resolve([candidateFor(productName(ctx))]),
++		async get(_candidate) {
++			const product = productName(ctx);
++			const candidate = candidateFor(product);
++			return {
++				name: candidate.name,
++				description: candidate.description,
++				invocation: candidate.invocation,
++				provider: candidate.provider,
++				source: candidate.source,
++				resourceBase: candidate.resourceBase,
++				content: skillContent(product)
++			};
++		}
++	};
++}
+ /** Cordis plugin name. */
+ const name = "skill-badge";
+ /** Service required by the bundled provider. */
+ const inject = ["skills"];
+-/** Register the bundled `dsh-badge` provider on `ctx.skills`. */
++/** Register the branded badge provider on `ctx.skills`. */
+ function apply(ctx) {
+-	ctx.skills.registerProvider(() => provider);
++	ctx.skills.registerProvider(() => createProvider(ctx));
+ }
+ //#endregion
+ export { apply, inject, name };

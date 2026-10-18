@@ -37,7 +37,9 @@
     "@deepseek-ai/dsh-subprocess-local@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-subprocess-local@npm%3A0.2.1-rc.2#./patches/dsh-subprocess-local@0.2.1-rc.2.patch",
     "@deepseek-ai/dsh-web-fetch-http@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-web-fetch-http@npm%3A0.2.1-rc.2#./patches/dsh-web-fetch-http@0.2.1-rc.2.patch",
     "@deepseek-ai/dsh-web-fetch-http@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-web-fetch-http@npm%3A0.2.1-rc.2#./patches/dsh-web-fetch-http@0.2.1-rc.2.patch",
-    "@modelcontextprotocol/client": "2.0.0"
+    "@modelcontextprotocol/client": "2.0.0",
+    "@deepseek-ai/dsh-skill-badge@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-skill-badge@npm%3A0.2.1-rc.2#./patches/dsh-skill-badge@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-skill-badge@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-skill-badge@npm%3A0.2.1-rc.2#./patches/dsh-skill-badge@0.2.1-rc.2.patch"
   },
   "dependenciesMeta": {
     "@deepseek-ai/dsh-subprocess-local": {

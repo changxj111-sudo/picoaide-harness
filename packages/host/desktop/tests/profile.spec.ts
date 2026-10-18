@@ -124,6 +124,7 @@ describe('desktop profile composition', {
       '@deepseek-ai/dsh-experimental-session-search',
       '@deepseek-ai/dsh-experimental-session-titles-bundle',
       '@deepseek-ai/dsh-experimental-ralph-bundle',
+      '@deepseek-ai/dsh-experimental-badge-skill-bundle',
       'third-party-one',
       'third-party-two',
     ])
@@ -166,6 +167,7 @@ describe('desktop profile composition', {
       '@deepseek-ai/dsh-experimental-session-search',
       '@deepseek-ai/dsh-experimental-session-titles-bundle',
       '@deepseek-ai/dsh-experimental-ralph-bundle',
+      '@deepseek-ai/dsh-experimental-badge-skill-bundle',
       'third-party-plugin',
     ])
     expect(repaired.dependencies).toEqual({ 'third-party-plugin': '^1.2.3' })
@@ -213,6 +215,7 @@ describe('desktop profile composition', {
       '@deepseek-ai/dsh-experimental-session-search',
       '@deepseek-ai/dsh-experimental-session-titles-bundle',
       '@deepseek-ai/dsh-experimental-ralph-bundle',
+      '@deepseek-ai/dsh-experimental-badge-skill-bundle',
     ])
   })
 

@@ -113,6 +113,7 @@ const REQUIRED_BUNDLES = [
   '@deepseek-ai/dsh-experimental-session-search',
   '@deepseek-ai/dsh-experimental-session-titles-bundle',
   '@deepseek-ai/dsh-experimental-ralph-bundle',
+  '@deepseek-ai/dsh-experimental-badge-skill-bundle',
 ]
 /** 携带桌面自身组装补丁层的 bundle（见 `REQUIRED_BUNDLES` 的说明）。 */
 const DESKTOP_LAYER_CARRIER_BUNDLE = '@picoaide/dsh-enterprise'

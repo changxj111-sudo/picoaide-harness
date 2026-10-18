@@ -3931,6 +3931,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@deepseek-ai/dsh-skill-badge@patch:@deepseek-ai/dsh-skill-badge@npm%3A0.2.1-rc.2#./patches/dsh-skill-badge@0.2.1-rc.2.patch::locator=picoaide-harness%40workspace%3A.":
+  version: 0.2.1-rc.2
+  resolution: "@deepseek-ai/dsh-skill-badge@patch:@deepseek-ai/dsh-skill-badge@npm%3A0.2.1-rc.2#./patches/dsh-skill-badge@0.2.1-rc.2.patch::version=0.2.1-rc.2&hash=ca4db1&locator=picoaide-harness%40workspace%3A."
+  peerDependencies:
+    "@deepseek-ai/cordis": ~4.0.5
+    "@deepseek-ai/dsh-skill": 0.2.1-rc.2
+  checksum: 10c0/02246214f9d782dc9b855c0f1c5c902305f3d7d0d40c341aed3742d0577b48d15bd569bcb1230111c9fd1e8233e00f664ab27155edc9995fa3f38419fa8bc91f
+  languageName: node
+  linkType: hard
+
 "@deepseek-ai/dsh-skill-filesystem@npm:0.2.1-rc.2":
   version: 0.2.1-rc.2
   resolution: "@deepseek-ai/dsh-skill-filesystem@npm:0.2.1-rc.2"
@@ -9234,6 +9244,7 @@ __metadata:
     "@deepseek-ai/dsh-experimental-agent-team-profile": "npm:0.2.1-rc.2"
     "@deepseek-ai/dsh-experimental-api-speech-to-text": "npm:0.2.1-rc.2"
     "@deepseek-ai/dsh-experimental-auto-review": "npm:0.2.1-rc.2"
+    "@deepseek-ai/dsh-experimental-badge-skill-bundle": "npm:0.2.1-rc.2"
     "@deepseek-ai/dsh-experimental-client-ui-agent-team": "npm:0.2.1-rc.2"
     "@deepseek-ai/dsh-experimental-client-ui-voice-input": "npm:0.2.1-rc.2"
     "@deepseek-ai/dsh-experimental-cot-translation-bundle": "npm:0.2.1-rc.2"

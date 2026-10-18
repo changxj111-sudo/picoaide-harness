@@ -13,7 +13,7 @@
  *    Messages 请求上（`adapter.ts:82` 每次请求调一次，契约见 `DeepSeekRequestAuth`，
  *    `types.ts:105`）。
  *    ⚠️ 这两条 claim 的锚点是**行为**不是版本号：升级上游时按"守卫是否仍在 / 请求头是否仍由
- *    `resolveAuth` 决定"复核（当前 pin `dsh-v0.2.1-rc.2` = 639ed0153，三条都还在原位）。
+ *    `resolveAuth` 决定"复核（当前 pin `dsh-v0.2.1-rc.2` = 687f282e，三条都还在原位）。
  *
  * 所以本插件取代上游的 `@deepseek-ai/dsh-llm-deepseek-api-key`（它的 `resolveAuth` 硬编码
  * `x-api-key`，对只认 Bearer 的网关必然 401，且没有任何换头的接缝），用同一份 Config 形状

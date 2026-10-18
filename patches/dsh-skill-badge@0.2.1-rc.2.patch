@@ -13,7 +13,7 @@ diff --git a/lib/index.js b/lib/index.js
  * @module @deepseek-ai/dsh-skill-badge
  */
  const PROVIDER_NAME = "dsh-badge";
-@@ -13,41 +11,92 @@
+@@ -13,41 +11,99 @@
  	kind: "directory",
  	path: fileURLToPath(new URL("../assets/", import.meta.url))
  };
@@ -51,18 +51,25 @@ diff --git a/lib/index.js b/lib/index.js
 +	try {
 +		const runtime = ctx?.get?.("desktopRuntime");
 +		const value = runtime?.productName;
-+		if (typeof value === "string" && value.trim() !== "") return value.trim();
++		if (typeof value === "string" && value.trim() !== "") return cleanName(value);
 +	} catch {}
 +	const env = typeof process === "undefined" ? undefined : process.env.PICOAI_PRODUCT_NAME;
-+	return typeof env === "string" && env.trim() !== "" ? env.trim() : FALLBACK_PRODUCT_NAME;
++	return typeof env === "string" && env.trim() !== "" ? cleanName(env) : FALLBACK_PRODUCT_NAME;
 +}
 +/** Shields.io message segment for an arbitrary product name. */
 +function encodedName(name) {
-+	return encodeURIComponent(name).replaceAll("-", "%2D").replaceAll("_", "%5F");
++	// Shields treats `-` and `_` as field/space separators, and `(`/`)`/`!`/`*`
++	// remain literal in encodeURIComponent. Percent-encode everything that is
++	// not an RFC 3986 unreserved character so OEM names cannot break the path.
++	return encodeURIComponent(name).replace(/[!'()*~_-]/gu, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
++}
++/** Keep OEM names safe for the generated Markdown text and bounded in size. */
++function cleanName(value) {
++	const cleaned = value.replace(/[\u0000-\u001f\u007f]+/gu, " ").replaceAll("`", "").replace(/\s+/gu, " ").trim().slice(0, 80);
++	return cleaned === "" ? FALLBACK_PRODUCT_NAME : cleaned;
 +}
 +function description(name) {
-+	const article = /^[aeiou]/iu.test(name) ? "an" : "a";
-+	return `Add the “Powered by ${name}” badge to documents, pull requests, merge requests, and other content produced with ${name}. Use whenever creating a pull request or merge request. Also use when the user asks for ${article} ${name} badge, powered-by attribution, or a reusable badge asset or snippet.`;
++	return `Add the “Powered by ${name}” badge to documents, pull requests, merge requests, and other content produced with ${name}. Use whenever creating a pull request or merge request. Also use when the user asks for the ${name} badge, powered-by attribution, or a reusable badge asset or snippet.`;
 +}
 +function skillContent(name) {
 +	const url = `https://img.shields.io/badge/Powered_by-${encodedName(name)}-4D6BFE?style=flat-square`;
@@ -82,7 +89,7 @@ diff --git a/lib/index.js b/lib/index.js
 +
 +## Usage rules
 +
-+- Preserve the badge's 121×20 dimensions and aspect ratio.
++- Preserve the badge's aspect ratio.
 +- Place the badge at the end of the attributed document or section unless the user specifies another position.
 +- Do not substitute another color, logo, label, or project URL.
 +- Do not use any upstream wordmark or logo for this badge.
@@ -90,7 +97,7 @@ diff --git a/lib/index.js b/lib/index.js
 +}
 +function candidateFor(product) {
 +	return {
-+		name: "dsh-badge",
++		name: "badge",
 +		description: description(product),
 +		invocation: {
 +			modelInvocable: true,

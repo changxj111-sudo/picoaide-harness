@@ -1,6 +1,6 @@
 # PicoAide Harness 测试覆盖矩阵
 
-三层覆盖：**单测**（50 个 vitest 文件）、**verify 脚本**（打包/加载/许可）、**E2E 自动化**（e2e-client.mjs 12 项断言 + real-env-verify.mjs 13 项真实服务断言）。
+三层覆盖：**单测**（126 个 vitest 文件）、**verify 脚本**（打包/加载/许可）、**E2E 自动化**（e2e-client.mjs 逐条报告 + real-env-verify.mjs 真实服务断言；条数以报告首行为唯一真源）。
 
 ## 客户端功能覆盖
 

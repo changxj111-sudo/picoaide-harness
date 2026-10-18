@@ -41,7 +41,11 @@
     "@deepseek-ai/dsh-skill-badge@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-skill-badge@npm%3A0.2.1-rc.2#./patches/dsh-skill-badge@0.2.1-rc.2.patch",
     "@deepseek-ai/dsh-skill-badge@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-skill-badge@npm%3A0.2.1-rc.2#./patches/dsh-skill-badge@0.2.1-rc.2.patch",
     "@deepseek-ai/dsh-experimental-badge-skill-bundle@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-experimental-badge-skill-bundle@npm%3A0.2.1-rc.2#./patches/dsh-experimental-badge-skill-bundle@0.2.1-rc.2.patch",
-    "@deepseek-ai/dsh-experimental-badge-skill-bundle@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-experimental-badge-skill-bundle@npm%3A0.2.1-rc.2#./patches/dsh-experimental-badge-skill-bundle@0.2.1-rc.2.patch"
+    "@deepseek-ai/dsh-experimental-badge-skill-bundle@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-experimental-badge-skill-bundle@npm%3A0.2.1-rc.2#./patches/dsh-experimental-badge-skill-bundle@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-schedule@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-schedule@npm%3A0.2.1-rc.2#./patches/dsh-schedule@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-schedule@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-schedule@npm%3A0.2.1-rc.2#./patches/dsh-schedule@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-web-app@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-web-app@npm%3A0.2.1-rc.2#./patches/dsh-web-app@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-web-app@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-web-app@npm%3A0.2.1-rc.2#./patches/dsh-web-app@0.2.1-rc.2.patch"
   },
   "dependenciesMeta": {
     "@deepseek-ai/dsh-subprocess-local": {

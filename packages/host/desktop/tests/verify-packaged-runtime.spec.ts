@@ -402,16 +402,19 @@ describe('上游补丁目标的静态 import 必须在打包必需清单里（G-
   // **子路径** import"与"打包必需清单"钉在一起；包根 import（`@deepseek-ai/dsh-tools`
   // 这类）不逐条登记 —— 清单是"缺了会静默/致命"的抽查oracle，不是完整打包清单。
   const PATCH_TARGETS = [
-    // `@deepseek-ai/dsh-agent-presets` was dropped in 0.1.7: the package no longer
-    // exists upstream (split into agent-preset + agent-preset-registry) and its
-    // patch — a module-resolution fallback — has no subject left to patch. The
-    // replacement implementation resolves through real Cordis/Node resolution
-    // instead of a disk walk, so that failure mode cannot recur.
+    // 2026-10-19：名单与 `patches/` 对齐（app-builder-lib 是构建依赖，不做 subpath
+    // import 扫描）。`dsh-schedule` 的补丁只加账号归属字段，其唯一静态上游子路径
+    // `@deepseek-ai/dsh-llm/brand` 由 base closure 随包，不纳入本扫描（否则要为
+    // 十几份 fake asar 夹具逐份补条目，判据噪声大于收益）。
     '@deepseek-ai/dsh-client-ui-brand-official',
+    '@deepseek-ai/dsh-client-ui-sidebar-documentpreview',
+    '@deepseek-ai/dsh-experimental-badge-skill-bundle',
+    '@deepseek-ai/dsh-fs-local',
     '@deepseek-ai/dsh-mcp-client',
-    '@deepseek-ai/dsh-plugin-package-inventory-deepseek',
     '@deepseek-ai/dsh-sandbox-windows-acl',
+    '@deepseek-ai/dsh-skill-badge',
     '@deepseek-ai/dsh-subprocess-local',
+    '@deepseek-ai/dsh-web-app',
     '@deepseek-ai/dsh-web-fetch-http',
   ]
 

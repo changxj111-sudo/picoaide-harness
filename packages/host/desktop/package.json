@@ -492,7 +492,11 @@
       "!**/node_modules/@types/uuid/**",
       "!**/node_modules/@types/dompurify/**",
       "!**/node_modules/@types/venn.js/**",
-      "!**/node_modules/@deepseek-ai/dsh-skill-badge/assets/dsh-badge.png"
+      "!**/node_modules/@deepseek-ai/dsh-skill-badge/assets/dsh-badge.png",
+      "!**/node_modules/@deepseek-ai/dsh-skill-badge/README*.md",
+      "!**/node_modules/@deepseek-ai/dsh-skill-badge/icon.svg",
+      "!**/node_modules/@deepseek-ai/dsh-experimental-badge-skill-bundle/README*.md",
+      "!**/node_modules/@deepseek-ai/dsh-experimental-badge-skill-bundle/icon.svg"
     ],
     "mac": {
       "target": [

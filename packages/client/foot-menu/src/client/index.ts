@@ -54,10 +54,14 @@ export type { FootMenuEntry, FootMenuService } from './contract.ts'
  */
 function openOfficialSchedulePanel(): void {
   if (typeof document === 'undefined') return
+  // 官方面板走 layout，而本产品的 panel-surface 用 html[data-dsh-panel-active]
+  // 让位主列：不先关掉当前桌面面板，官方页会被 stylesheet 的 :not(...) 规则隐藏，
+  // 表现为“点了没反应”。广播一个 null 激活事件让 panel-surface 走 close()。
+  document.dispatchEvent(new CustomEvent('dsh-panel-activate', { detail: null }))
   const rows = [...document.querySelectorAll('button')].filter(button =>
     [...button.classList].some(token => token === 'panelRow' || token.endsWith('_panelRow')))
   const label = t('footMenu.schedule')
-  const target = rows.find(button => button.getAttribute('aria-label') === label) ?? rows[0]
+  const target = rows.find(button => button.getAttribute('aria-label') === label)
   target?.click()
 }
 
@@ -66,6 +70,65 @@ function openOfficialSchedulePanel(): void {
  * registry every sibling panel entry registers into.
  * @param ctx - browser Cordis context.
  */
+/**
+ * Hide official client chrome that this product replaces. Exported for jsdom
+ * regression tests: callers pass the document to keep the effect testable.
+ *
+ * - `sidebar.panellist` rows for 自动化任务 / 插件 (duplicate product entries);
+ * - official AccountMenu's 登录 / 退出登录 / 意见反馈 items;
+ * - settings navigation entries for 模型 / 内置插件.
+ */
+export function hideProductChrome(doc: Document): void {
+  // 官方 sidebar.panellist 的重复入口：自动化任务（自研 cron 的替身入口已移到
+  // 「更多」浮层）与插件（本产品不暴露官方插件管理页）。
+  const panelLabels = new Set(['自动化任务', 'Automation tasks', '插件', 'Plugins'])
+  // 官方账户菜单里的认证/反馈项：本产品用自己的账户卡与渠道反馈入口。
+  const accountItemLabels = new Set([
+    '登录', '退出登录', '意见反馈',
+    'Sign in', 'Sign out', 'Feedback',
+  ])
+  const visibleText = (el: Element): string => (el.textContent ?? '').replace(/\s+/gu, ' ').trim()
+  const hidePanelRows = (): void => {
+    for (const button of doc.querySelectorAll('button')) {
+      const tokens = [...button.classList]
+      if (!tokens.some(token => token === 'panelRow' || token.endsWith('_panelRow'))) continue
+      if (panelLabels.has(button.getAttribute('aria-label') ?? '')) button.style.display = 'none'
+    }
+  }
+  const settingsNavLabels = new Set(['模型', 'Models', '内置插件', 'Built-in plugins'])
+  const hideSettingsNav = (): void => {
+    const generals = [...doc.querySelectorAll('button')].filter(button => /^(通用设置|General)$/u.test(visibleText(button)))
+    for (const general of generals) {
+      const container = general.closest('[role="dialog"]') ?? general.parentElement?.parentElement
+      if (container == null) continue
+      for (const button of container.querySelectorAll('button')) {
+        if (settingsNavLabels.has(visibleText(button))) button.style.display = 'none'
+      }
+    }
+  }
+  const hideAccountItems = (): void => {
+    // 只处理同时含「设置」的菜单：那是官方 AccountMenu；本产品自己的 foot-menu
+    // 浮层与账户卡浮层都没有「设置」项，不会被误伤。
+    for (const menu of doc.querySelectorAll('[role="menu"]')) {
+      const items = [...menu.querySelectorAll('button, [role="menuitem"]')]
+      const hasSettings = items.some((item) => {
+        const text = visibleText(item)
+        return text.startsWith('设置') || /^Settings\b/u.test(text)
+      })
+      if (!hasSettings) continue
+      for (const item of items) {
+        const text = visibleText(item)
+        if ([...accountItemLabels].some(label => text === label || text.startsWith(`${label} `))) {
+          (item as HTMLElement).style.display = 'none'
+        }
+      }
+    }
+  }
+  hidePanelRows()
+  hideSettingsNav()
+  hideAccountItems()
+}
+
 export function apply(ctx: ClientContext): void {
   // Foot lane dictionaries (zh key source, en mirror).
   ctx.effect(() => {
@@ -128,55 +191,8 @@ export function apply(ctx: ClientContext): void {
   }), 'foot-menu: official automation entry')
   ctx.effect(() => {
     if (typeof document === 'undefined') return () => {}
-    // 官方 sidebar.panellist 的重复入口：自动化任务（自研 cron 的替身入口已移到
-    // 「更多」浮层）与插件（本产品不暴露官方插件管理页）。
-    const panelLabels = new Set(['自动化任务', 'Automation tasks', '插件', 'Plugins'])
-    // 官方账户菜单里的认证/反馈项：本产品用自己的账户卡与渠道反馈入口。
-    const accountItemLabels = new Set([
-      '登录', '退出登录', '意见反馈',
-      'Sign in', 'Sign out', 'Feedback',
-    ])
-    const visibleText = (el: Element): string => (el.textContent ?? '').replace(/\s+/gu, ' ').trim()
-    const hidePanelRows = (): void => {
-      for (const button of document.querySelectorAll('button')) {
-        const tokens = [...button.classList]
-        if (!tokens.some(token => token === 'panelRow' || token.endsWith('_panelRow'))) continue
-        if (panelLabels.has(button.getAttribute('aria-label') ?? '')) button.style.display = 'none'
-      }
-    }
-    const settingsNavLabels = new Set(['模型', 'Models', '内置插件', 'Built-in plugins'])
-    const hideSettingsNav = (): void => {
-      const generals = [...document.querySelectorAll('button')].filter(button => /^(通用设置|General)$/u.test(visibleText(button)))
-      for (const general of generals) {
-        const container = general.closest('[role="dialog"]') ?? general.parentElement?.parentElement
-        if (container == null) continue
-        for (const button of container.querySelectorAll('button')) {
-          if (settingsNavLabels.has(visibleText(button))) button.style.display = 'none'
-        }
-      }
-    }
-    const hideAccountItems = (): void => {
-      // 只处理同时含「设置」的菜单：那是官方 AccountMenu；本产品自己的 foot-menu
-      // 浮层与账户卡浮层都没有「设置」项，不会被误伤。
-      for (const menu of document.querySelectorAll('[role="menu"]')) {
-        const items = [...menu.querySelectorAll('button, [role="menuitem"]')]
-        const hasSettings = items.some(item => /^(设置|Settings)(?:\s|$)/u.test(visibleText(item)))
-        if (!hasSettings) continue
-        for (const item of items) {
-          const text = visibleText(item)
-          if ([...accountItemLabels].some(label => text === label || text.startsWith(`${label} `))) {
-            (item as HTMLElement).style.display = 'none'
-          }
-        }
-      }
-    }
-    const hide = (): void => {
-      hidePanelRows()
-      hideSettingsNav()
-      hideAccountItems()
-    }
-    hide()
-    const observer = new MutationObserver(hide)
+    hideProductChrome(document)
+    const observer = new MutationObserver(() => hideProductChrome(document))
     observer.observe(document.body, { childList: true, subtree: true })
     return () => observer.disconnect()
   }, 'foot-menu: hide official duplicate entries and account menu auth/feedback items')

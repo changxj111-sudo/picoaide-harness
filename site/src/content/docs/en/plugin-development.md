@@ -86,7 +86,7 @@ The conventions every product-owned package follows:
 - Function plugins only have the named exports `name` / `inject` / `Config` / `apply`, **with no default export**; service-class packages default-export a service class;
 - `Config` validates the row's `config` with a Schemastery schema; **a key absent from the row is a schema default**, so decide each key's default behaviour explicitly when writing the schema;
 - Every side effect (tools, routes, listeners, timers, slots) is wrapped in `ctx.effect` and returns a cleanup function: plugin unload and generation rebuilds both rely on it to roll back;
-- Each product package carries its own `./invariant` subpath (in-package invariant self-checks) and explicit `exports`.
+- Declare `exports` explicitly; upstream removed the invariants service in 0.2.1, so **do not add a `./invariant` companion entry** (it will not be loaded).
 
 Three patch semantics are worth memorising (implemented in upstream `deepseek-harness/vendor/include/src/index.ts`):
 

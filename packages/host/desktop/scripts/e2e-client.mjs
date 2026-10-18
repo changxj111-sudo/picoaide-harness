@@ -595,8 +595,10 @@ async function main() {
   // 展开一次、合上一次：浮层真的能开，「更多」行是"点得到的那一行"。
   const laneOpened = await openFootMenu(cdp)
   const laneItems = await evalSafe(cdp, `[...document.querySelectorAll('.pico-foot-menu-item')].filter(b => b.offsetParent).map(b => (b.textContent ?? '').trim())`)
-  reportStep('「更多」浮层可展开且列出五个面板入口',
+  reportStep('「更多」浮层可展开且列出五个面板入口（自动化任务仍为第一项）',
     laneOpened === 'OPENED' && Array.isArray(laneItems)
+      && laneItems.length >= 5
+      && laneItems[0] === '自动化任务'
       && ['自动化任务', '能力中心', '连接器', '浏览器', '应用中心'].every(t => laneItems.includes(t)),
     `open=${laneOpened} items=${JSON.stringify(laneItems)}`)
   await screenshot(cdp, '05c-foot-menu')
@@ -622,10 +624,15 @@ async function main() {
   })()`)
   await evalSafe(cdp, `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`).catch(() => {})
   await wait(400)
-  const hiddenRowsOk = Array.isArray(officialRows) && officialRows.every(row => row.visible === false)
+  const scheduleRow = Array.isArray(officialRows) ? officialRows.find(row => row.label === '自动化任务') : undefined
+  const hiddenRowsOk = scheduleRow !== undefined
+    && scheduleRow.visible === false
+    && officialRows.every(row => row.visible === false)
+  const menuHasSettings = (accountMenuItems ?? []).some(text => text === '设置' || text.startsWith('设置'))
   const hiddenMenuOk = accountTrigger === 'OPENED'
+    && menuHasSettings
     && !['登录', '退出登录', '意见反馈'].some(label => (accountMenuItems ?? []).some(text => text === label || text.startsWith(`${label} `)))
-  reportStep('官方重复入口与账户菜单认证/反馈项已隐藏', hiddenRowsOk && hiddenMenuOk,
+  reportStep('官方重复入口与账户菜单认证/反馈项已隐藏（设置仍保留）', hiddenRowsOk && hiddenMenuOk,
     `rows=${JSON.stringify(officialRows)} menu=${JSON.stringify(accountMenuItems)} trigger=${accountTrigger}`)
 
   // 5.5 暗色模式（2026-09-16 真机事故的回归点）：
@@ -796,21 +803,34 @@ async function main() {
       return [...root.querySelectorAll('button')].filter(b => b.offsetParent).map(b => (b.textContent ?? '').trim())
     })()`)
     const settingsHiddenOk = Array.isArray(settingsNav)
+      && settingsNav.includes('通用设置')
+      && settingsNav.includes('账号')
       && !['模型', '内置插件'].some(label => settingsNav.includes(label))
-    reportStep('设置窗口已隐藏「模型」「内置插件」入口', settingsHiddenOk, `nav=${JSON.stringify(settingsNav)}`)
+    reportStep('设置窗口已隐藏「模型」「内置插件」入口（通用设置/账号仍在）', settingsHiddenOk, `nav=${JSON.stringify(settingsNav)}`)
     await screenshot(cdp, '05-settings')
     await clickLabel(cdp, '关闭', 1200)
   }
 
   // 7. 官方「自动化任务」：0.2.1 起用上游 Schedule 取代自研 cron；入口仍在
-  // 「更多」浮层的原位（第一位），点击打开官方 `schedules` 面板。
-  await clickFootMenuItem(cdp, '自动化任务', 3500)
+  // 「更多」浮层的原位（第一位）。先打开一个自有面板，验证从面板切换到官方
+  // schedules 时 panel-surface 的让位规则不会把官方页隐藏（SC-2 回归点）。
+  await clickFootMenuItem(cdp, '能力中心', 2000)
+  await waitFor(cdp, `document.documentElement.getAttribute('data-dsh-panel-active') === 'capability'`, 8000)
+  const scheduleClicked = await clickFootMenuItem(cdp, '自动化任务', 3500)
   const scheduleLayout = await waitFor(cdp, `(() => {
     const heading = [...document.querySelectorAll('h1')].find(el => (el.textContent || '').includes('自动化任务') && el.offsetParent)
     const surface = document.querySelector('.dshDesktopConversationSurface')
-    return heading !== undefined && surface !== null && surface.getBoundingClientRect().height > 0
+    const text = document.body.innerText || ''
+    const active = document.documentElement.getAttribute('data-dsh-panel-active')
+    return heading !== undefined
+      && surface !== null
+      && surface.getBoundingClientRect().height > 0
+      && active === null
+      && (text.includes('还没有自动化任务') || text.includes('任务列表'))
   })()`, 15000, 300)
-  reportStep('官方自动化任务面板可打开（入口仍在「更多」原位）', scheduleLayout === true, `schedule=${String(scheduleLayout)}`)
+  reportStep('官方自动化任务面板可打开且目录已就绪（入口仍在「更多」原位）',
+    scheduleClicked === 'CLICKED' && scheduleLayout === true,
+    `click=${scheduleClicked} schedule=${String(scheduleLayout)}`)
   await screenshot(cdp, '06-schedule')
   // 回到会话：官方任务页没有「返回聊天」；用侧栏「新会话」回到聊天输入。
   await clickLabel(cdp, '新会话', 2500)

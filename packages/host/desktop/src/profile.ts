@@ -59,12 +59,12 @@ export const DESKTOP_PROFILE_ROOT = 'cordis.yml'
 const BIN_NAME = DESKTOP_PACKAGE_NAME
 // 桌面自己的包同时是 profile 的**最后一个 bundle 层**（`dsh.bundle.patch` 列出
 // `./cordis.patch.yml` 与九个自有包的组装补丁）。它必须排在 `@deepseek-ai/dsh-web-app`
-// 之后，因为那十层是"晚于上游 bundle、早于 profile 自有层与 home 层"的层。
+// 之后，因为那九层是"晚于上游 bundle、早于 profile 自有层与 home 层"的层。
 //
 // 为什么必须是**真的 bundle 层**（2026-09-28 的 `verify:profile` P0）：
 // 上游 `readProfilePatches`（= `config-editor.edit()` 每次设置写入前的复算来源、
 // `plugin-manager` 读面、`ProfileContext` 自述）只读 `profile.layers` + `patchPath`
-// + home 补丁 + `context.overlays`。把十层塞进 `context.overlays` 也不行：`overlays`
+// + home 补丁 + `context.overlays`。把九层塞进 `context.overlays` 也不行：`overlays`
 // 追加在**最后**，于是 `- insert:` 的行会晚于设置文档建立，`config-editor.edit()` 收尾的
 // 断言 `Configuration for "<id>" is overridden by a home patch or command-line overlay`
 // 会直接抛错（模型网关行 `picoaide-gateway-llm` 每次登录都要写 baseURL ⇒ 模型面全灭）。
@@ -76,7 +76,7 @@ const REQUIRED_BUNDLES = [
   // 本包自己的那一层由 `@picoaide/dsh-enterprise` 的 `dsh.bundle.patch` 首项
   // `../../../cordis.patch.yml` 携带 —— `resolveBundleDir` 用 `resolve.paths()` 找包，
   // **不含包自身目录**，所以 `dsh-plugin-desktop` 无法把自己解析成 bundle；企业包是
-  // 这十层里第一个、且它的层本来就依赖桌面层先落地（它 patch `desktop-shell` 行）。
+  // 这九层里第一个、且它的层本来就依赖桌面层先落地（它 patch `desktop-shell` 行）。
   '@picoaide/dsh-enterprise',
   '@picoaide/dsh-account-card',
   '@picoaide/dsh-wasm-apps',
@@ -972,7 +972,7 @@ export async function prepareDesktopProfile(
   let desktopLayerSeen = false
   for (const layer of activeDesktopProfileLayers(profile, disabledBundles)) {
     bundlePatches.push(...layer.patches)
-    // 十层自有组装补丁来自 `dsh-plugin-desktop` 这个 **bundle 层自己的**
+    // 九层自有组装补丁来自 `dsh-plugin-desktop` 这个 **bundle 层自己的**
     // `dsh.bundle.patch` 列表（见 `package.json` 的 `dsh.bundle` 与 `REQUIRED_BUNDLES`），
     // 不再由本文件手工 push —— 手工 push 的层在 `readProfilePatches` 里复算不到，
     // 而每次设置写入都会用复算结果替换整棵树（`config-editor.edit()`）。

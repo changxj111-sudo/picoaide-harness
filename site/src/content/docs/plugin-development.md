@@ -86,7 +86,7 @@ export default class MyService extends Service {
 - 函数插件只命名导出 `name` / `inject` / `Config` / `apply`，**没有 default export**；服务类包默认导出服务类；
 - `Config` 用 Schemastery schema 校验行的 `config`；**行上没有的键就是 schema 缺省值**，写 schema 时要显式决定每个键的默认行为；
 - 所有副作用（工具、路由、监听、定时器、槽位）都包在 `ctx.effect` 内并返回清理函数：插件卸载与 generation 重建都靠它回滚；
-- 每个自研包自带 `./invariant` 子路径（包内不变量自检）与显式 `exports`。
+- 显式声明 `exports`；0.2.1 起上游已删除 invariants 服务，**不要再新增 `./invariant` 伴生入口**（加了也不会被加载）。
 
 补丁语义有三条必须记住（实现在上游 `deepseek-harness/vendor/include/src/index.ts`）：
 

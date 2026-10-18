@@ -7,7 +7,7 @@ PicoAide Harness 的插件生态不是一个市场，而是**一套组合约定 
 
 ## 官方上游与本项目的关系
 
-上游是 DeepSeek Harness（`deepseek-ai/deepseek-harness`），本项目以**固定版本原样运行**它：当前 pin `dsh-v0.2.0-rc.2`，真源是仓库根的 `upstream.json`。两边分工清楚：
+上游是 DeepSeek Harness（`deepseek-ai/deepseek-harness`），本项目以**固定版本原样运行**它：当前 pin `dsh-v0.2.1-rc.2`，真源是仓库根的 `upstream.json`。两边分工清楚：
 
 | | 上游 | 本项目 |
 |---|---|---|

@@ -119,7 +119,7 @@ The test is simple: if a principle has no landing place in the code, it does not
 
 ## 7. The upstream version is pinned, not modified
 
-**Principle**: the upstream DeepSeek Harness runs unchanged at a fixed version (currently pinned at `dsh-v0.2.0-rc.2`; the source of truth is `upstream.json` at the repository root). Product capabilities come from plugin composition plus a **small number of guarded patches**, never a whole-tree fork.
+**Principle**: the upstream DeepSeek Harness runs unchanged at a fixed version (currently pinned at `dsh-v0.2.1-rc.2`; the source of truth is `upstream.json` at the repository root). Product capabilities come from plugin composition plus a **small number of guarded patches**, never a whole-tree fork.
 
 **Evidence**
 

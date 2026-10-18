@@ -33,7 +33,6 @@ import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Fiber } from '@deepseek-ai/cordis'
-import { livePresetMounts } from '@deepseek-ai/dsh-agent-preset-registry'
 import { desktopRuntimeStub } from './helpers/desktop-runtime-stub.ts'
 import { FIBER_ACTIVE } from '../src/startup-rows.ts'
 import {
@@ -95,6 +94,7 @@ interface BootedDesktopContext {
   }
   readonly agentPresets: {
     list(): Promise<Array<{ id: string, name?: string, description?: string, order?: number, broken?: string }>>
+    inspectCompositions(): Array<{ id: string }>
   }
   readonly fiber: Fiber
 }
@@ -393,7 +393,7 @@ describe('legacy agent presets on the real desktop profile', () => {
       expect(readFileSync(marker, 'utf8')).toBe('legacy-preset-probe-ran\n')
 
       // ④ 预设真的进了这次组合的挂载集合（同一个真 Cordis 运行期）。
-      const mounts = livePresetMounts(ctx.fiber).map(mount => mount.presetId)
+      const mounts = ctx.agentPresets.inspectCompositions().map(inspection => inspection.id)
       expect(mounts).toContain('legacy-shared')
 
       // 反向对照（防"判据恒真"）：没有目录的那个 id 一个面都不得出现。

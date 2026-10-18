@@ -7,7 +7,7 @@ PicoAide Harness's plugin ecosystem is not a marketplace — it is **a set of co
 
 ## How the upstream ecosystem relates to this product
 
-Upstream is DeepSeek Harness (`deepseek-ai/deepseek-harness`), and this product runs it **unchanged at a fixed version**: the current pin is `dsh-v0.2.0-rc.2`, with `upstream.json` at the repository root as the source of truth. The split is clear:
+Upstream is DeepSeek Harness (`deepseek-ai/deepseek-harness`), and this product runs it **unchanged at a fixed version**: the current pin is `dsh-v0.2.1-rc.2`, with `upstream.json` at the repository root as the source of truth. The split is clear:
 
 | | Upstream | This product |
 |---|---|---|

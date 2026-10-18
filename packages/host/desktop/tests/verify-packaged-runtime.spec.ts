@@ -134,7 +134,6 @@ const REQUIRED_ASAR_EXPORT_PATHS = [
   'node_modules/@picoaide/dsh-enterprise/lib/error-reporting.js',
   'node_modules/@picoaide/dsh-enterprise/lib/skill-telemetry.js',
   'node_modules/@picoaide/dsh-enterprise/lib/channel-sync.js',
-  'node_modules/@picoaide/dsh-enterprise/lib/invariant.js',
   // 2026-09-23（第三轮审计反向 oracle）：这 7 条此前不在任何一张表里，而产物里
   // 真实存在且被真实 specifier 引用 ⇒ 删掉它们没有任何判据会红。
   'node_modules/@picoaide/dsh-enterprise/lib/index.js',
@@ -144,7 +143,6 @@ const REQUIRED_ASAR_EXPORT_PATHS = [
   'node_modules/@picoaide/dsh-enterprise/lib/session-identity.js',
   'node_modules/@picoaide/dsh-enterprise/package.json',
   'node_modules/@picoaide/dsh-connectors/lib/index.js',
-  'node_modules/@picoaide/dsh-connectors/lib/invariant.js',
   'node_modules/@picoaide/dsh-connectors/lib/store.js',
   'node_modules/@picoaide/dsh-connectors/lib/user-scope.js',
   // ⚠️ 下面这张表是 `completeArchiveEntries()` 搭夹具用的**本地拷贝**，真源是脚本里的
@@ -763,8 +761,6 @@ describe('反向 oracle：清单必须覆盖产物（第三轮审计 P-1，2026-
     ['产物里真实的跨包 specifier', 'node_modules/@picoaide/dsh-connectors/lib/user-scope.js'],
     ['产物里真实的跨包 specifier', 'node_modules/@picoaide/dsh-enterprise/lib/loopback.js'],
     ['产物里真实的跨包 specifier', 'node_modules/@picoaide/dsh-enterprise/lib/server-connector/auth.js'],
-    ['`exports["./invariant"]`（包自有不变量伴生入口）', 'node_modules/@picoaide/dsh-account-card/lib/invariant.js'],
-    ['`exports["./invariant"]`（包自有不变量伴生入口）', 'node_modules/@picoaide/dsh-cron/lib/invariant.js'],
   ])('%s：删掉 %s 后每包棘轮必须红', (_reason, entry) => {
     const without = effectivePackagedRuntimeEntries().filter(candidate => candidate !== entry)
     expect(without, `${entry} 本来就不在生效清单里，这条用例失去意义`).not.toContain(entry)
@@ -791,7 +787,7 @@ describe('反向 oracle：清单必须覆盖产物（第三轮审计 P-1，2026-
     }
   })
 
-  it('第三轮审计实测的 8 条"无别表兜底"缺口逐条都不再静默', () => {
+  it('第三轮审计实测的 6 条"无别表兜底"缺口逐条都不再静默', () => {
     // 审计表里列出的 8 条（`browser/lib/surface.js`、`host-locale/lib/loopback.js`、
     // `browser|account-card|foot-menu` 的 `lib/client.js`、`account-card|cron` 的
     // `lib/invariant.js`）—— 这一轮它们被真实需要面反推出来了。
@@ -801,8 +797,6 @@ describe('反向 oracle：清单必须覆盖产物（第三轮审计 P-1，2026-
       'node_modules/@picoaide/dsh-browser/lib/client.js',
       'node_modules/@picoaide/dsh-account-card/lib/client.js',
       'node_modules/@picoaide/dsh-foot-menu/lib/client.js',
-      'node_modules/@picoaide/dsh-account-card/lib/invariant.js',
-      'node_modules/@picoaide/dsh-cron/lib/invariant.js',
       'node_modules/@picoaide/dsh-cron/lib/client.js',
     ]
     const effective = new Set(effectivePackagedRuntimeEntries())
@@ -1951,7 +1945,6 @@ describe('packaged desktop runtime verification (physical layout, asar: false)',
       // ERR_MODULE_NOT_FOUND(整个应用起不来),而不是"某一行插件不装配"。
       for (const entry of [
         'node_modules/@picoaide/dsh-wasm-apps-host/lib/index.js',
-        'node_modules/@picoaide/dsh-wasm-apps-host/lib/invariant.js',
         'node_modules/@picoaide/dsh-wasm-apps-host/lib/electron-adapter.js',
         'node_modules/@picoaide/dsh-wasm-apps-host/package.json',
         'node_modules/@picoaide/dsh-wasm-apps-host/cordis.patch.yml',

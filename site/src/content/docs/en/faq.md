@@ -140,7 +140,7 @@ No. Employee-built WASM apps open only inside a **separate client window** (via 
 
 ### What is the relationship between PicoAide Harness and DeepSeek Harness?
 
-It is built on a fixed version of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (currently pinned at `dsh-v0.2.0-rc.2`; the source of truth is `upstream.json` at the repository root). Upstream provides the core agent, plugin system, and Web UI; this project provides the desktop packaging, local service management, and the enterprise control plane. **The upstream source runs unchanged, without modifications** — only a small number of guarded patches are kept, and upgrades only follow the upstream version number.
+It is built on a fixed version of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (currently pinned at `dsh-v0.2.1-rc.2`; the source of truth is `upstream.json` at the repository root). Upstream provides the core agent, plugin system, and Web UI; this project provides the desktop packaging, local service management, and the enterprise control plane. **The upstream source runs unchanged, without modifications** — only a small number of guarded patches are kept, and upgrades only follow the upstream version number.
 
 ### Is this an official DeepSeek product?
 

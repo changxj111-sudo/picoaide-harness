@@ -98,9 +98,11 @@ describe('every Yarn patch is applied to every installed copy', () => {
       const targets = packages.filter(pkg => pkg.name === name)
       expect(targets.length, `${name} installed copy`).toBeGreaterThan(0)
 
-      const changedFiles = [...readFileSync(patchPath, 'utf8').matchAll(/^\+\+\+ b\/(.+)$/gmu)].map(m => m[1])
+      const changedFiles = [...readFileSync(patchPath, 'utf8').matchAll(/^\+\+\+ b\/(.+)$/gmu)].flatMap(m => (m[1] === undefined ? [] : [m[1]]))
       const marker = MARKERS[short]
       expect(marker, `${file} marker registration`).toBeDefined()
+      if (marker === undefined) throw new Error(`${file} marker registration`)
+      const markerText: string = marker
 
       for (const target of targets) {
         // Reverse-applying means the installed bytes are exactly the patch result.
@@ -109,7 +111,7 @@ describe('every Yarn patch is applied to every installed copy', () => {
           `${file} is not applied in ${target.dir}`,
         ).not.toThrow()
         const hit = changedFiles.some(rel => {
-          try { return readFileSync(join(target.dir, rel), 'utf8').includes(marker) } catch { return false }
+          try { return readFileSync(join(target.dir, rel), 'utf8').includes(markerText) } catch { return false }
         })
         expect(hit, `${file} effect marker missing in ${target.dir}`).toBe(true)
       }

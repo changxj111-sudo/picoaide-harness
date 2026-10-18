@@ -136,3 +136,66 @@ diff --git a/lib/index.js b/lib/index.js
  }
  //#endregion
  export { apply, inject, name };
+diff --git a/locale/zh.json b/locale/zh.json
+--- a/locale/zh.json
++++ b/locale/zh.json
+@@ -1,6 +1,6 @@
+ {
+   "meta": {
+-    "title": "DSH",
+-    "description": "提供官方 powered-by-DSH 徽章技能。"
++    "title": "徽章技能",
++    "description": "提供产品/OEM 徽章技能。"
+   }
+ }
+diff --git a/locale/en.json b/locale/en.json
+--- a/locale/en.json
++++ b/locale/en.json
+@@ -1,6 +1,6 @@
+ {
+   "meta": {
+-    "title": "DSH",
+-    "description": "Provide the official powered-by-DSH badge skill."
++    "title": "Badge skill",
++    "description": "Provide the product/OEM badge skill."
+   }
+ }
+diff --git a/assets/dsh-badge.md b/assets/dsh-badge.md
+--- a/assets/dsh-badge.md
++++ b/assets/dsh-badge.md
+@@ -1,31 +1,6 @@
+-# dsh Badge
++# Badge
+ 
+-Add the official “powered by dsh” badge without recreating or restyling it.
++The badge content is generated at runtime with the current product/OEM name.
+ 
+-## Assets
+-
+-- Local PNG: [`dsh-badge.png`](dsh-badge.png), 726×120 source image; render at 121×20
+-- Shields.io image URL: `https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white`
+-- Project URL: `https://github.com/deepseek-ai/deepseek-harness`
+-
+-## Markdown
+-
+-Use this linked badge in Markdown:
+-
+-```markdown
+-[![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)
+-```
+-
+-If attribution should not be linked, use:
+-
+-```markdown
+-![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)
+-```
+-
+-## Usage rules
+-
+-- For GitHub or GitLab Markdown, use the Shields.io URL and link it to the project URL unless the user asks for an unlinked image.
+-- For Feishu and other systems that import remote images unreliably, upload `dsh-badge.png` from this skill directory instead of generating another badge.
+-- Preserve the badge's 121×20 dimensions and aspect ratio.
+-- Place the badge at the end of the attributed document or section unless the user specifies another position.
+-- Do not substitute another color, logo, label, or project URL.
++Follow the skill body provided by the badge provider. Do not use upstream
++branding, wordmarks, or logos for this badge.

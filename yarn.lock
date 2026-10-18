@@ -2093,6 +2093,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@deepseek-ai/dsh-experimental-badge-skill-bundle@patch:@deepseek-ai/dsh-experimental-badge-skill-bundle@npm%3A0.2.1-rc.2#./patches/dsh-experimental-badge-skill-bundle@0.2.1-rc.2.patch::locator=picoaide-harness%40workspace%3A.":
+  version: 0.2.1-rc.2
+  resolution: "@deepseek-ai/dsh-experimental-badge-skill-bundle@patch:@deepseek-ai/dsh-experimental-badge-skill-bundle@npm%3A0.2.1-rc.2#./patches/dsh-experimental-badge-skill-bundle@0.2.1-rc.2.patch::version=0.2.1-rc.2&hash=6a19a7&locator=picoaide-harness%40workspace%3A."
+  dependencies:
+    "@deepseek-ai/dsh-skill-badge": "npm:0.2.1-rc.2"
+  peerDependencies:
+    "@deepseek-ai/cordis": ~4.0.5
+  checksum: 10c0/9f0bc93a53513d11db7513c46b2cd03efc7621adbccb776e545eeeb57619147881417c941f32111faf28cad5851f4892607092e027df98a2f457b9a918c53aeb
+  languageName: node
+  linkType: hard
+
 "@deepseek-ai/dsh-experimental-client-ui-agent-team@npm:0.2.1-rc.2":
   version: 0.2.1-rc.2
   resolution: "@deepseek-ai/dsh-experimental-client-ui-agent-team@npm:0.2.1-rc.2"
@@ -3933,11 +3944,11 @@ __metadata:
 
 "@deepseek-ai/dsh-skill-badge@patch:@deepseek-ai/dsh-skill-badge@npm%3A0.2.1-rc.2#./patches/dsh-skill-badge@0.2.1-rc.2.patch::locator=picoaide-harness%40workspace%3A.":
   version: 0.2.1-rc.2
-  resolution: "@deepseek-ai/dsh-skill-badge@patch:@deepseek-ai/dsh-skill-badge@npm%3A0.2.1-rc.2#./patches/dsh-skill-badge@0.2.1-rc.2.patch::version=0.2.1-rc.2&hash=ca4db1&locator=picoaide-harness%40workspace%3A."
+  resolution: "@deepseek-ai/dsh-skill-badge@patch:@deepseek-ai/dsh-skill-badge@npm%3A0.2.1-rc.2#./patches/dsh-skill-badge@0.2.1-rc.2.patch::version=0.2.1-rc.2&hash=a7edbe&locator=picoaide-harness%40workspace%3A."
   peerDependencies:
     "@deepseek-ai/cordis": ~4.0.5
     "@deepseek-ai/dsh-skill": 0.2.1-rc.2
-  checksum: 10c0/02246214f9d782dc9b855c0f1c5c902305f3d7d0d40c341aed3742d0577b48d15bd569bcb1230111c9fd1e8233e00f664ab27155edc9995fa3f38419fa8bc91f
+  checksum: 10c0/dd8250d3db096fc0563af8494d6504b1469912ffecde85999fac3d9078ccd0faff72a0e12075a08053df9fa40003d910b93841926c2688d0ca96577e5ec21800
   languageName: node
   linkType: hard
 

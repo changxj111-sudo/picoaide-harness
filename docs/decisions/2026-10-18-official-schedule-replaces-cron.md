@@ -77,7 +77,11 @@ foot-menu 的同一个 DOM effect 还负责另外两处官方 chrome：
   回退 `PICOAI_PRODUCT_NAME` 环境变量，最后回退 `PicoAide Harness`），生成
   `Powered by <OEM>` 的 shields.io 徽章（无 logo、无外链）；
 - 不再引导使用上游 `dsh-badge.png`（该 PNG 含上游鲸鱼标志，本产品不使用），并在
-  electron-builder 的 `build.files` 里排除该 PNG，避免它随包分发。
+  electron-builder 的 `build.files` 里排除该 PNG，避免它随包分发；`assets/dsh-badge.md`
+  也改为中性说明。
+- bundle 与 skill 的 locale 标题/描述同步改为「徽章技能 / 当前产品/OEM 名徽章」，
+  不再出现 DSH 或 powered-by-DSH 文案；skill 的内部 id 仍是 `dsh-badge`
+  （调用标识，不是展示文案）。
 
 注意：
 

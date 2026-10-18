@@ -128,19 +128,46 @@ export function apply(ctx: ClientContext): void {
   }), 'foot-menu: official automation entry')
   ctx.effect(() => {
     if (typeof document === 'undefined') return () => {}
-    const labels = new Set(['自动化任务', 'Automation tasks'])
-    const hide = (): void => {
+    // 官方 sidebar.panellist 的重复入口：自动化任务（自研 cron 的替身入口已移到
+    // 「更多」浮层）与插件（本产品不暴露官方插件管理页）。
+    const panelLabels = new Set(['自动化任务', 'Automation tasks', '插件', 'Plugins'])
+    // 官方账户菜单里的认证/反馈项：本产品用自己的账户卡与渠道反馈入口。
+    const accountItemLabels = new Set([
+      '登录', '退出登录', '意见反馈',
+      'Sign in', 'Sign out', 'Feedback',
+    ])
+    const visibleText = (el: Element): string => (el.textContent ?? '').replace(/\s+/gu, ' ').trim()
+    const hidePanelRows = (): void => {
       for (const button of document.querySelectorAll('button')) {
         const tokens = [...button.classList]
         if (!tokens.some(token => token === 'panelRow' || token.endsWith('_panelRow'))) continue
-        if (labels.has(button.getAttribute('aria-label') ?? '')) button.style.display = 'none'
+        if (panelLabels.has(button.getAttribute('aria-label') ?? '')) button.style.display = 'none'
       }
+    }
+    const hideAccountItems = (): void => {
+      // 只处理同时含「设置」的菜单：那是官方 AccountMenu；本产品自己的 foot-menu
+      // 浮层与账户卡浮层都没有「设置」项，不会被误伤。
+      for (const menu of document.querySelectorAll('[role="menu"]')) {
+        const items = [...menu.querySelectorAll('button, [role="menuitem"]')]
+        const hasSettings = items.some(item => /^(设置|Settings)(?:\s|$)/u.test(visibleText(item)))
+        if (!hasSettings) continue
+        for (const item of items) {
+          const text = visibleText(item)
+          if ([...accountItemLabels].some(label => text === label || text.startsWith(`${label} `))) {
+            (item as HTMLElement).style.display = 'none'
+          }
+        }
+      }
+    }
+    const hide = (): void => {
+      hidePanelRows()
+      hideAccountItems()
     }
     hide()
     const observer = new MutationObserver(hide)
     observer.observe(document.body, { childList: true, subtree: true })
     return () => observer.disconnect()
-  }, 'foot-menu: hide duplicate official schedule row')
+  }, 'foot-menu: hide official duplicate entries and account menu auth/feedback items')
 
   // 唯一占用者：整个底部功能区只剩这一行（账目卡与设置各自在别的座位）。
   ctx.effect(

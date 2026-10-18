@@ -603,6 +603,31 @@ async function main() {
   await evalSafe(cdp, `(() => { const row = document.querySelector('.pico-foot-menu-trigger'); if (row !== null) row.click(); return true })()`)
   await wait(500)
 
+  // 5.4 官方重复入口与账户菜单项的隐藏：插件/自动化任务的 sidebar.panellist 行、
+  // 官方账户菜单里的 登录/意见反馈（本产品用自己的账户卡与渠道反馈入口）。
+  const officialRows = await evalSafe(cdp, `(() => {
+    const rows = [...document.querySelectorAll('button')].filter(b => [...b.classList].some(t => t === 'panelRow' || t.endsWith('_panelRow')))
+    return rows.map(b => ({ label: (b.getAttribute('aria-label') ?? '').trim(), visible: b.offsetParent !== null }))
+  })()`)
+  const accountTrigger = await evalSafe(cdp, `(() => {
+    const b = [...document.querySelectorAll('button[aria-haspopup="menu"]')].find(x => (x.getAttribute('aria-label') ?? '').includes('账号'))
+    if (b === undefined) return 'NO_TRIGGER'
+    b.click()
+    return 'OPENED'
+  })()`)
+  await wait(600)
+  const accountMenuItems = await evalSafe(cdp, `(() => {
+    const items = [...document.querySelectorAll('[role="menu"]')].flatMap(menu => [...menu.querySelectorAll('button, [role="menuitem"]')])
+    return items.filter(item => item.offsetParent !== null).map(item => (item.textContent ?? '').replace(/\s+/gu, ' ').trim())
+  })()`)
+  await evalSafe(cdp, `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`).catch(() => {})
+  await wait(400)
+  const hiddenRowsOk = Array.isArray(officialRows) && officialRows.every(row => row.visible === false)
+  const hiddenMenuOk = accountTrigger === 'OPENED'
+    && !['登录', '退出登录', '意见反馈'].some(label => (accountMenuItems ?? []).some(text => text === label || text.startsWith(`${label} `)))
+  reportStep('官方重复入口与账户菜单认证/反馈项已隐藏', hiddenRowsOk && hiddenMenuOk,
+    `rows=${JSON.stringify(officialRows)} menu=${JSON.stringify(accountMenuItems)} trigger=${accountTrigger}`)
+
   // 5.5 暗色模式（2026-09-16 真机事故的回归点）：
   //   ① 主题真的切到暗色（body[data-ds-dark-theme]）；
   //   ② 侧边栏版本号胶囊是"反色"的 —— 亮色黑底白字、暗色白底黑字，两边对比度都要够

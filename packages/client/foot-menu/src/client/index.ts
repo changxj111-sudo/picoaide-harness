@@ -144,6 +144,17 @@ export function apply(ctx: ClientContext): void {
         if (panelLabels.has(button.getAttribute('aria-label') ?? '')) button.style.display = 'none'
       }
     }
+    const settingsNavLabels = new Set(['模型', 'Models', '内置插件', 'Built-in plugins'])
+    const hideSettingsNav = (): void => {
+      const generals = [...document.querySelectorAll('button')].filter(button => /^(通用设置|General)$/u.test(visibleText(button)))
+      for (const general of generals) {
+        const container = general.closest('[role="dialog"]') ?? general.parentElement?.parentElement
+        if (container == null) continue
+        for (const button of container.querySelectorAll('button')) {
+          if (settingsNavLabels.has(visibleText(button))) button.style.display = 'none'
+        }
+      }
+    }
     const hideAccountItems = (): void => {
       // 只处理同时含「设置」的菜单：那是官方 AccountMenu；本产品自己的 foot-menu
       // 浮层与账户卡浮层都没有「设置」项，不会被误伤。
@@ -161,6 +172,7 @@ export function apply(ctx: ClientContext): void {
     }
     const hide = (): void => {
       hidePanelRows()
+      hideSettingsNav()
       hideAccountItems()
     }
     hide()

@@ -500,6 +500,8 @@ try {
     ['ui-plugin-manager', 'P0-8：侧栏插件页与桌面自研面板的 DOM 接管不互通'],
     ['office-to-pdf', 'libreoffice-kit 引擎不在四张打包清单覆盖内 + macOS 签名'],
     ['ui-settings-plugins', '桌面隐藏「插件」设置选项卡（2026-09 产品决策）'],
+    ['ui-settings-models', '桌面隐藏「模型」设置分区（2026-10-18 产品决策）'],
+    ['ui-settings-plugin-inventory', '桌面隐藏「内置插件」清单分区（2026-10-18 产品决策）'],
     ['hmr', '与 plugin-manager 共用 profileContext 开关，但没有 CLI 专属的 appReady 会炸整棵树'],
     // 0.1.7 新增的两条上游行：它们的包只被 **peer 声明**、永不随包安装
     // （`@deepseek-ai/dsh-deepseek-account` / `@deepseek-ai/dsh-api-account-controller`

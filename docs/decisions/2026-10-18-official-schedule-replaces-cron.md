@@ -41,6 +41,18 @@ foot-menu 的同一个 DOM effect 还负责另外两处官方 chrome：
 客户端 E2E 新增断言：`官方重复入口与账户菜单认证/反馈项已隐藏`（校验 panellist 行
 不可见、账户菜单可见项只剩「设置」）。
 
+### 设置窗口：隐藏「模型」「内置插件」
+
+- 组合层关闭两行：`ui-settings-models`（上游模型 provider 页；与 enterprise 层同名
+  disable 双保险）与 `ui-settings-plugin-inventory`（内置插件清单页）。
+- `subagent-model-selection-settings` **不能 disable**：`tool-subagent` 行在 Host scope
+  里硬依赖它，disable 后 standard / ptc / cordis 三个预设全部 `broken`（实测报
+  `modelSelectionSettings requires .../model-selection-settings in the Host scope`）。
+  因此保留该行，只由 DOM 隐藏它的「模型」导航项。
+- foot-menu 的 DOM 兜底：设置对话框里与「通用设置」同一容器的「模型 / Models /
+  内置插件 / Built-in plugins」导航项隐藏，防止其它包再次注册。
+- 客户端 E2E 断言 `设置窗口已隐藏「模型」「内置插件」入口` 通过。
+
 ## 默认启用的官方实验性 bundle（2026-10-18）
 
 产品要求"官方实验性插件默认全部装好"：以下 8 个 bundle 已加入桌面 profile 的

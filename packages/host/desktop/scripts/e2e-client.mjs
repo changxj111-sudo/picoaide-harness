@@ -789,6 +789,15 @@ async function main() {
     }
     const text = await bodyText(cdp)
     reportStep('设置面板可打开', open === 'CLICKED' && text.includes('设置'), 'settings')
+    const settingsNav = await evalSafe(cdp, `(() => {
+      const general = [...document.querySelectorAll('button')].find(b => /^(通用设置|General)$/u.test((b.textContent ?? '').trim()))
+      const root = general?.closest('[role="dialog"]') ?? general?.parentElement?.parentElement
+      if (root == null) return null
+      return [...root.querySelectorAll('button')].filter(b => b.offsetParent).map(b => (b.textContent ?? '').trim())
+    })()`)
+    const settingsHiddenOk = Array.isArray(settingsNav)
+      && !['模型', '内置插件'].some(label => settingsNav.includes(label))
+    reportStep('设置窗口已隐藏「模型」「内置插件」入口', settingsHiddenOk, `nav=${JSON.stringify(settingsNav)}`)
     await screenshot(cdp, '05-settings')
     await clickLabel(cdp, '关闭', 1200)
   }

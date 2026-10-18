@@ -41,6 +41,33 @@ foot-menu 的同一个 DOM effect 还负责另外两处官方 chrome：
 客户端 E2E 新增断言：`官方重复入口与账户菜单认证/反馈项已隐藏`（校验 panellist 行
 不可见、账户菜单可见项只剩「设置」）。
 
+## 默认启用的官方实验性 bundle（2026-10-18）
+
+产品要求"官方实验性插件默认全部装好"：以下 8 个 bundle 已加入桌面 profile 的
+`REQUIRED_BUNDLES` 与 `dependencies`，随构建分发、默认启用（row 实测 `state=2` ACTIVE）：
+
+| 产品名 | bundle | 插入/替换的行 |
+| --- | --- | --- |
+| 语音输入 | `dsh-experimental-voice-input-bundle`（原有） | `speech-to-text`、`speech-to-text-sensevoice`、`api-speech-to-text`、`ui-voice-input` |
+| 智能体团队 | `dsh-experimental-agent-team-profile` | 禁用 `tool-subagent*` 四行，插入 `agent-team`、`tool-agent-team`、`ui-agent-team` |
+| 自动授权审查 | `dsh-experimental-auto-review` | `auto-review` |
+| 思考过程机器翻译 | `dsh-experimental-cot-translation-bundle` | `translator`、`cot-translation`（provider `bing`，目标语言 auto） |
+| 持久终端 | `dsh-experimental-terminal-bundle` | `optional-persistent-terminals` 组（registry / bash / pwsh / tool-terminal） |
+| 会话搜索 | `dsh-experimental-session-search` | `optional-session-search` 组（sqlite 索引 `:memory:`，首次搜索时打开 + `tool-session-query`） |
+| 随对话更新的标题 | `dsh-experimental-session-titles-bundle` | 禁用 `session-title-llm`，插入 `session-title-all-prompts-llm` |
+| Ralph 循环 | `dsh-experimental-ralph-bundle` | `optional-ralph` 组（`workflow-ptc` + `tool-ralph`，`maxRounds: 64`） |
+
+注意：
+
+- 这些是**上游 experimental** 包，默认值随上游走；升级时需复核每一行的语义变化。
+- `agent-team-profile` 会**禁用**上游的 `tool-subagent` / `tool-subagent-control` /
+  `tool-subagent-list-agents` / `tool-subagent-fork` 四行，由 Agent Teams 工具接管；
+  这是上游 bundle 的既定行为。
+- `auto-review` 会对每次工具调用走一次 LLM 授权复核（Auto 权限预设下），默认启用后
+  延迟与 token 成本会上升；`session-search` 用内存索引；`terminal` 保留常驻 shell 进程。
+- 平台条件行 `optional-terminal-pwsh` 在非 Windows 上由上游 `disabled` 表达式关闭，
+  这是正常状态（实测 `state=undefined, disabled=true`）。
+
 ## 数据与兼容
 
 - 旧任务账本仍在数据根 `cron/ledger.json`（只读保留）。**官方 Schedule 不会自动导入**这些任务；

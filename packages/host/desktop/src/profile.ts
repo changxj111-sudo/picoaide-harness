@@ -103,6 +103,16 @@ const REQUIRED_BUNDLES = [
   //      槽位（属 ui-plugin-manager），我们提供自己的等价面，
   //      经 `pluginNavigation.openBundle(...)` 打开。
   '@deepseek-ai/dsh-experimental-voice-input-bundle',
+  // 官方实验性 bundle（2026-10-18 产品决策：**默认全部启用**，随桌面构建分发）。
+  // 顺序有意义：agent-team-profile 会禁用上游的 subagent 工具行并换成 Agent Teams
+  // 工具；session-titles 会禁用旧的 session-title-llm 行；其余只插入行。
+  '@deepseek-ai/dsh-experimental-agent-team-profile',
+  '@deepseek-ai/dsh-experimental-auto-review',
+  '@deepseek-ai/dsh-experimental-cot-translation-bundle',
+  '@deepseek-ai/dsh-experimental-terminal-bundle',
+  '@deepseek-ai/dsh-experimental-session-search',
+  '@deepseek-ai/dsh-experimental-session-titles-bundle',
+  '@deepseek-ai/dsh-experimental-ralph-bundle',
 ]
 /** 携带桌面自身组装补丁层的 bundle（见 `REQUIRED_BUNDLES` 的说明）。 */
 const DESKTOP_LAYER_CARRIER_BUNDLE = '@picoaide/dsh-enterprise'

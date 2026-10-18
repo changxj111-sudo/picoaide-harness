@@ -117,6 +117,13 @@ describe('desktop profile composition', {
       '@picoaide/dsh-browser',
       'dsh-memory-evolve',
       '@deepseek-ai/dsh-experimental-voice-input-bundle',
+      '@deepseek-ai/dsh-experimental-agent-team-profile',
+      '@deepseek-ai/dsh-experimental-auto-review',
+      '@deepseek-ai/dsh-experimental-cot-translation-bundle',
+      '@deepseek-ai/dsh-experimental-terminal-bundle',
+      '@deepseek-ai/dsh-experimental-session-search',
+      '@deepseek-ai/dsh-experimental-session-titles-bundle',
+      '@deepseek-ai/dsh-experimental-ralph-bundle',
       'third-party-one',
       'third-party-two',
     ])
@@ -152,6 +159,13 @@ describe('desktop profile composition', {
       '@picoaide/dsh-browser',
       'dsh-memory-evolve',
       '@deepseek-ai/dsh-experimental-voice-input-bundle',
+      '@deepseek-ai/dsh-experimental-agent-team-profile',
+      '@deepseek-ai/dsh-experimental-auto-review',
+      '@deepseek-ai/dsh-experimental-cot-translation-bundle',
+      '@deepseek-ai/dsh-experimental-terminal-bundle',
+      '@deepseek-ai/dsh-experimental-session-search',
+      '@deepseek-ai/dsh-experimental-session-titles-bundle',
+      '@deepseek-ai/dsh-experimental-ralph-bundle',
       'third-party-plugin',
     ])
     expect(repaired.dependencies).toEqual({ 'third-party-plugin': '^1.2.3' })
@@ -192,6 +206,13 @@ describe('desktop profile composition', {
       '@picoaide/dsh-browser',
       'dsh-memory-evolve',
       '@deepseek-ai/dsh-experimental-voice-input-bundle',
+      '@deepseek-ai/dsh-experimental-agent-team-profile',
+      '@deepseek-ai/dsh-experimental-auto-review',
+      '@deepseek-ai/dsh-experimental-cot-translation-bundle',
+      '@deepseek-ai/dsh-experimental-terminal-bundle',
+      '@deepseek-ai/dsh-experimental-session-search',
+      '@deepseek-ai/dsh-experimental-session-titles-bundle',
+      '@deepseek-ai/dsh-experimental-ralph-bundle',
     ])
   })
 

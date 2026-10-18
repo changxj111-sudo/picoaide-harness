@@ -65,8 +65,8 @@ diff --git a/lib/index.js b/lib/index.js
 +}
 +/** Keep OEM names safe for the generated Markdown text and bounded in size. */
 +function cleanName(value) {
-+	const cleaned = value.replace(/[\u0000-\u001f\u007f]+/gu, " ").replaceAll("`", "").replace(/\s+/gu, " ").trim().slice(0, 80);
-+	return cleaned === "" ? FALLBACK_PRODUCT_NAME : cleaned;
++	const cleaned = value.replace(/[\u0000-\u001f\u007f]+/gu, " ").replaceAll("`", "").replace(/\s+/gu, " ").trim();
++	return cleaned === "" ? FALLBACK_PRODUCT_NAME : Array.from(cleaned).slice(0, 80).join("");
 +}
 +function description(name) {
 +	return `Add the “Powered by ${name}” badge to documents, pull requests, merge requests, and other content produced with ${name}. Use whenever creating a pull request or merge request. Also use when the user asks for the ${name} badge, powered-by attribution, or a reusable badge asset or snippet.`;

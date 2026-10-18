@@ -300,7 +300,7 @@ try {
   const scheduleOk = await waitFor(`(() => {
     const heading = [...document.querySelectorAll('h1')].find(el => (el.textContent || '').includes('自动化任务') && el.offsetParent)
     const text = document.body.innerText || ''
-    return heading !== undefined && (text.includes('还没有自动化任务') || text.includes('任务列表'))
+    return heading !== undefined && (text.includes('还没有自动化任务') || document.querySelector('ul[aria-label="任务列表"]') !== null)
   })()`, 15000)
   reportStep('自动化任务面板打开且目录就绪（真实数据）', scheduleOk === true, `schedule=${String(scheduleOk)}`)
   await screenshot('r08-schedule')

@@ -54,15 +54,17 @@ export type { FootMenuEntry, FootMenuService } from './contract.ts'
  */
 function openOfficialSchedulePanel(): void {
   if (typeof document === 'undefined') return
-  // 官方面板走 layout，而本产品的 panel-surface 用 html[data-dsh-panel-active]
-  // 让位主列：不先关掉当前桌面面板，官方页会被 stylesheet 的 :not(...) 规则隐藏，
-  // 表现为“点了没反应”。广播一个 null 激活事件让 panel-surface 走 close()。
-  document.dispatchEvent(new CustomEvent('dsh-panel-activate', { detail: null }))
   const rows = [...document.querySelectorAll('button')].filter(button =>
     [...button.classList].some(token => token === 'panelRow' || token.endsWith('_panelRow')))
   const label = t('footMenu.schedule')
   const target = rows.find(button => button.getAttribute('aria-label') === label)
-  target?.click()
+  // 找不到官方行时不要先关掉当前面板：那会让用户“点一下只剩空白”。
+  if (target === undefined) return
+  // 官方面板走 layout，而本产品的 panel-surface 用 html[data-dsh-panel-active]
+  // 让位主列：不先关掉当前桌面面板，官方页会被 stylesheet 的 :not(...) 规则隐藏，
+  // 表现为“点了没反应”。广播一个 null 激活事件让 panel-surface 走 close()。
+  document.dispatchEvent(new CustomEvent('dsh-panel-activate', { detail: null }))
+  target.click()
 }
 
 /**
@@ -78,6 +80,13 @@ function openOfficialSchedulePanel(): void {
  * - official AccountMenu's 登录 / 退出登录 / 意见反馈 items;
  * - settings navigation entries for 模型 / 内置插件.
  */
+export function installProductChromeHiding(doc: Document): () => void {
+  hideProductChrome(doc)
+  const observer = new MutationObserver(() => hideProductChrome(doc))
+  observer.observe(doc.body, { childList: true, subtree: true })
+  return () => observer.disconnect()
+}
+
 export function hideProductChrome(doc: Document): void {
   // 官方 sidebar.panellist 的重复入口：自动化任务（自研 cron 的替身入口已移到
   // 「更多」浮层）与插件（本产品不暴露官方插件管理页）。
@@ -113,7 +122,7 @@ export function hideProductChrome(doc: Document): void {
       const items = [...menu.querySelectorAll('button, [role="menuitem"]')]
       const hasSettings = items.some((item) => {
         const text = visibleText(item)
-        return text.startsWith('设置') || /^Settings\b/u.test(text)
+        return text.startsWith('设置') || text.startsWith('Settings')
       })
       if (!hasSettings) continue
       for (const item of items) {
@@ -191,10 +200,7 @@ export function apply(ctx: ClientContext): void {
   }), 'foot-menu: official automation entry')
   ctx.effect(() => {
     if (typeof document === 'undefined') return () => {}
-    hideProductChrome(document)
-    const observer = new MutationObserver(() => hideProductChrome(document))
-    observer.observe(document.body, { childList: true, subtree: true })
-    return () => observer.disconnect()
+    return installProductChromeHiding(document)
   }, 'foot-menu: hide official duplicate entries and account menu auth/feedback items')
 
   // 唯一占用者：整个底部功能区只剩这一行（账目卡与设置各自在别的座位）。

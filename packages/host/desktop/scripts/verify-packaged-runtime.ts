@@ -222,11 +222,12 @@ export const REQUIRED_PACKAGED_RUNTIME_ENTRIES = [
   'node_modules/@deepseek-ai/dsh-experimental-badge-skill-bundle/package.json',
   'node_modules/@deepseek-ai/dsh-experimental-badge-skill-bundle/cordis.patch.yml',
   'node_modules/@deepseek-ai/dsh-experimental-badge-skill-bundle/lib/index.js',
+  'node_modules/@deepseek-ai/dsh-experimental-client-ui-agent-team/lib/client.js',
+  'node_modules/@deepseek-ai/dsh-experimental-client-ui-cot-translation/lib/client.js',
   // 2026-10-19 交叉审计 EXP-4/RC-4：官方 Schedule（账号隔离补丁）、徽章 skill
   // 提供方与默认 preset 补丁也必须在产物里，否则 bundle 层/补丁静默缺失。
   'node_modules/@deepseek-ai/dsh-schedule/lib/index.js',
   'node_modules/@deepseek-ai/dsh-skill-badge/lib/index.js',
-  'node_modules/@deepseek-ai/dsh-web-app/presets/standard.patch.yml',
   // 平台内置技能（作者手册，2026-09-19 起叫 `app-builder`）**不在本清单里**，也不在包里：
   // 它的源目录已从本 vendored 包搬到服务端仓库的 `server/skills/app-builder/`，随服务端
   // 镜像发布、由员工在能力中心按需安装（`server/Dockerfile` 直接 COPY，客户端产物里
@@ -1489,7 +1490,7 @@ export const REQUIRED_WORKSPACE_PACKAGE_COVERAGE: readonly WorkspacePackageCover
  * 2026-10-19：129 → 144（9 个默认实验 bundle 各 3 条 + schedule/badge/preset 产物；
  * 交叉审计 EXP-4/RC-4 要求这些链进产物清单）。
  */
-export const REQUIRED_WORKSPACE_PACKAGE_COVERAGE_MANIFEST_FLOOR = 144
+export const REQUIRED_WORKSPACE_PACKAGE_COVERAGE_MANIFEST_FLOOR = 146
 // 111 → 114（2026-09-23 合并 origin/master 的 #138）：那条线给必需清单加了
 // `@deepseek-ai/dsh-plugin-manager` 的 3 个 `lib/**` 条目，生效清单随之增长 3 条。
 // 棘轮语义是"贴住下限、只允许上调" ⇒ 合并后同步上调（删条目仍会打破等式）。

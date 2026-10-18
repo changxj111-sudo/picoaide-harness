@@ -814,8 +814,10 @@ async function main() {
   // 7. 官方「自动化任务」：0.2.1 起用上游 Schedule 取代自研 cron；入口仍在
   // 「更多」浮层的原位（第一位）。先打开一个自有面板，验证从面板切换到官方
   // schedules 时 panel-surface 的让位规则不会把官方页隐藏（SC-2 回归点）。
-  await clickFootMenuItem(cdp, '能力中心', 2000)
-  await waitFor(cdp, `document.documentElement.getAttribute('data-dsh-panel-active') === 'capability'`, 8000)
+  const capabilityClicked = await clickFootMenuItem(cdp, '能力中心', 2000)
+  const capabilityOpened = await waitFor(cdp, `document.documentElement.getAttribute('data-dsh-panel-active') === 'capability'`, 8000)
+  reportStep('切换前置：能力中心面板确实已打开', capabilityClicked === 'CLICKED' && capabilityOpened === true,
+    `click=${capabilityClicked} active=${String(capabilityOpened)}`)
   const scheduleClicked = await clickFootMenuItem(cdp, '自动化任务', 3500)
   const scheduleLayout = await waitFor(cdp, `(() => {
     const heading = [...document.querySelectorAll('h1')].find(el => (el.textContent || '').includes('自动化任务') && el.offsetParent)

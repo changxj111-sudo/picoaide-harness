@@ -1,7 +1,7 @@
 diff --git a/lib/index.js b/lib/index.js
 --- a/lib/index.js
 +++ b/lib/index.js
-@@ -10,6 +10,19 @@
+@@ -10,6 +10,27 @@
  import { MessageId } from "@deepseek-ai/dsh-llm/brand";
  import { defineDomain, domainTable } from "@deepseek-ai/dsh-storage-domain";
  import { isDeepStrictEqual } from "node:util";
@@ -9,19 +9,27 @@ diff --git a/lib/index.js b/lib/index.js
 +function picoOwner(ctx) {
 +	try {
 +		const session = ctx.get?.("picoSession")?.getSession?.();
-+		if (typeof session?.username === "string" && session.username !== "") return JSON.stringify([session.serverURL ?? "", session.username]);
++		if (typeof session?.username === "string" && session.username !== "") {
++			const server = String(session.serverURL ?? "").trim().replace(/\/+$/u, "").toLowerCase();
++			return JSON.stringify([server, session.username.trim()]);
++		}
 +	} catch {}
 +	return undefined;
 +}
-+/** A task is visible/deliverable to the current account; unowned rows stay invisible when the host is account-aware. */
++/** A task is visible/deliverable to the current account; account-aware hosts fail closed while signed out. */
 +function ownerMatches(ctx, owner) {
++	let aware = false;
++	try {
++		aware = ctx.get?.("picoSession") !== undefined;
++	} catch {}
++	if (!aware) return true;
 +	const current = picoOwner(ctx);
-+	return current === void 0 || owner === current;
++	return current !== undefined && owner === current;
 +}
  //#region lib/types/domain.js
  /**
  * Strict Schedule decoding, replay, time validation, and framing.
-@@ -1564,7 +1577,7 @@
+@@ -1564,7 +1585,7 @@
  		const failed = /* @__PURE__ */ new Set();
  		const handled = /* @__PURE__ */ new Set();
  		const scanNow = Date.now();
@@ -30,7 +38,16 @@ diff --git a/lib/index.js b/lib/index.js
  		for (const task of due) {
  			if (this.stopping) return;
  			if (handled.has(task.record.id)) continue;
-@@ -1678,6 +1691,7 @@
+@@ -1633,7 +1654,7 @@
+ 			}
+ 		}
+ 		if (this.stopping) return;
+-		const next = this.tasks().filter((task) => task.status === "active" && !failed.has(task.record.id)).reduce((at, task) => {
++		const next = this.tasks().filter((task) => task.status === "active" && ownerMatches(this.ctx, task.owner) && !failed.has(task.record.id)).reduce((at, task) => {
+ 			const target = Date.parse(task.record.scheduledAt);
+ 			return at === void 0 ? target : Math.min(at, target);
+ 		}, void 0);
+@@ -1678,6 +1699,7 @@
  	tables: { tasks: domainTable(z$1.object({
  		sessionId: z$1.string().min(1).transform(SessionId),
  		record: recordSchema,
@@ -38,7 +55,20 @@ diff --git a/lib/index.js b/lib/index.js
  		status: z$1.enum(["active", "inactive"]).default("active"),
  		lastDelivery: deliveryReceiptSchema.optional(),
  		deliveryHistory: deliveryHistorySchema.optional()
-@@ -2100,6 +2114,7 @@
+@@ -2026,6 +2048,12 @@
+ 					this.emitChanged();
+ 				}, this.retention);
+ 				this.runtime.requestDrive();
++				ctx.effect(() => {
++					const off = ctx.on?.("pico/session-changed", () => this.runtime?.requestDrive());
++					return () => {
++						if (typeof off === "function") off();
++					};
++				});
+ 				return cleanup;
+ 			});
+ 			ctx.on("session/created", (session) => {
+@@ -2100,6 +2128,7 @@
  				signal?.throwIfAborted();
  				await domain.table("tasks").put(id, {
  					sessionId,
@@ -46,7 +76,7 @@ diff --git a/lib/index.js b/lib/index.js
  					record,
  					status: "active",
  					deliveryHistory: {
-@@ -2118,7 +2133,7 @@
+@@ -2118,7 +2147,7 @@
  		* @returns Persisted reminders in storage order.
  		*/
  		async list(request) {
@@ -55,7 +85,7 @@ diff --git a/lib/index.js b/lib/index.js
  		}
  		/**
  		* Read all active and inactive Host reminders with their original Session bindings.
-@@ -2127,7 +2142,7 @@
+@@ -2127,7 +2156,7 @@
  		* @returns Reminders ordered by scheduledAt ascending, then lexicographically by id.
  		*/
  		async catalog() {
@@ -64,7 +94,7 @@ diff --git a/lib/index.js b/lib/index.js
  				...task.record,
  				sessionId: task.sessionId,
  				status: task.status,
-@@ -2144,7 +2159,7 @@
+@@ -2144,7 +2173,7 @@
  		async history(request) {
  			if (!Number.isSafeInteger(request.limit) || request.limit < 1 || request.limit > 100) throw new ScheduleInputError("invalid_rule", "Delivery history limit must be a safe integer from 1 through 100.");
  			const task = (await this.getDomain()).table("tasks").get(request.id);
@@ -73,7 +103,7 @@ diff --git a/lib/index.js b/lib/index.js
  				id: request.id,
  				code: "schedule_not_found"
  			};
-@@ -2166,7 +2181,7 @@
+@@ -2166,7 +2195,7 @@
  				const tasks = (await this.getDomain()).table("tasks");
  				signal?.throwIfAborted();
  				const current = tasks.get(request.id);
@@ -82,7 +112,12 @@ diff --git a/lib/index.js b/lib/index.js
  					id: request.id,
  					deleted: false,
  					code: "schedule_not_found"
-@@ -2201,7 +2216,7 @@
+@@ -2196,16 +2225,16 @@
+ 		*/
+ 		async update(request, signal) {
+ 			return this.serialize(async () => {
+-				const refusal = this.reminderTargetRefusal(request.sessionId);
+-				if (refusal !== void 0) return refusal;
  				const tasks = (await this.getDomain()).table("tasks");
  				signal?.throwIfAborted();
  				const current = tasks.get(request.id);
@@ -91,3 +126,15 @@ diff --git a/lib/index.js b/lib/index.js
  					id: request.id,
  					updated: false,
  					code: "schedule_not_found"
+ 				};
++				const refusal = this.reminderTargetRefusal(request.sessionId);
++				if (refusal !== void 0) return refusal;
+ 				if (current.status === "inactive") return {
+ 					id: request.id,
+ 					updated: false,
+@@ -2299,4 +2328,4 @@
+ 	};
+ })();
+ //#endregion
+-export { MAX_TITLE_LENGTH, MIN_EVERY_INTERVAL_SECONDS, REQUIRED_TITLE_MESSAGE, SCHEDULE_CHANGE_VERSION, ScheduleId, ScheduleInputError, ScheduleLogError, ScheduleService, ScheduleService as default, canonicalizeCronExpression, createAfterScheduleRecord, createAtScheduleRecord, createCronScheduleRecord, createDailyScheduleRecord, createEveryScheduleRecord, createWeeklyScheduleRecord, decodeScheduleChange, decodeScheduleRecord, foldScheduleEvents, isRecurringScheduleRecord, normalizeWeekdays, parseCronInput, parseWeeklyInput, renderRecurringReminderBatchFraming, renderReminderFraming, resolveCronOccurrence, resolveDailyOccurrence, resolveEveryOccurrence, resolveRecurringOccurrence, resolveWeeklyOccurrence, scheduleDomain, scheduleTitle, scheduleView, weeklyTime };
++export { MAX_TITLE_LENGTH, MIN_EVERY_INTERVAL_SECONDS, REQUIRED_TITLE_MESSAGE, SCHEDULE_CHANGE_VERSION, ScheduleId, ScheduleInputError, ScheduleLogError, ScheduleService, ScheduleService as default, canonicalizeCronExpression, createAfterScheduleRecord, createAtScheduleRecord, createCronScheduleRecord, createDailyScheduleRecord, createEveryScheduleRecord, createWeeklyScheduleRecord, decodeScheduleChange, decodeScheduleRecord, foldScheduleEvents, isRecurringScheduleRecord, normalizeWeekdays, parseCronInput, parseWeeklyInput, renderRecurringReminderBatchFraming, renderReminderFraming, resolveCronOccurrence, resolveDailyOccurrence, resolveEveryOccurrence, resolveRecurringOccurrence, resolveWeeklyOccurrence, scheduleDomain, scheduleTitle, scheduleView, weeklyTime, ownerMatches, picoOwner };

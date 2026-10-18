@@ -3389,7 +3389,7 @@ __metadata:
 
 "@deepseek-ai/dsh-schedule@patch:@deepseek-ai/dsh-schedule@npm%3A0.2.1-rc.2#./patches/dsh-schedule@0.2.1-rc.2.patch::locator=picoaide-harness%40workspace%3A.":
   version: 0.2.1-rc.2
-  resolution: "@deepseek-ai/dsh-schedule@patch:@deepseek-ai/dsh-schedule@npm%3A0.2.1-rc.2#./patches/dsh-schedule@0.2.1-rc.2.patch::version=0.2.1-rc.2&hash=6d442e&locator=picoaide-harness%40workspace%3A."
+  resolution: "@deepseek-ai/dsh-schedule@patch:@deepseek-ai/dsh-schedule@npm%3A0.2.1-rc.2#./patches/dsh-schedule@0.2.1-rc.2.patch::version=0.2.1-rc.2&hash=a57913&locator=picoaide-harness%40workspace%3A."
   dependencies:
     "@deepseek-ai/schemastery": "npm:~3.18.5"
     "@js-temporal/polyfill": "npm:0.5.1"
@@ -3408,7 +3408,7 @@ __metadata:
     "@deepseek-ai/dsh-tools": 0.2.1-rc.2
     "@deepseek-ai/dsh-typert-protocol": 0.2.1-rc.2
     "@deepseek-ai/dsh-workspace": 0.2.1-rc.2
-  checksum: 10c0/f307f6e8d2c18cce062af0133378139a5ef35f93153218ce9b02f18b6a53f7c09249eea27ab227cbd5fcc35d12b6b5a309ffd4692a4d08d44ce582f1fc094b42
+  checksum: 10c0/d1b877812f316b80f332d717771f1bf9db8aa36f64dcc4203af012ae84664c7f1f33091cbf1692024a3ff5209733e0e95b73d50016cf58db14a7707d165393db
   languageName: node
   linkType: hard
 
@@ -3969,11 +3969,11 @@ __metadata:
 
 "@deepseek-ai/dsh-skill-badge@patch:@deepseek-ai/dsh-skill-badge@npm%3A0.2.1-rc.2#./patches/dsh-skill-badge@0.2.1-rc.2.patch::locator=picoaide-harness%40workspace%3A.":
   version: 0.2.1-rc.2
-  resolution: "@deepseek-ai/dsh-skill-badge@patch:@deepseek-ai/dsh-skill-badge@npm%3A0.2.1-rc.2#./patches/dsh-skill-badge@0.2.1-rc.2.patch::version=0.2.1-rc.2&hash=22333f&locator=picoaide-harness%40workspace%3A."
+  resolution: "@deepseek-ai/dsh-skill-badge@patch:@deepseek-ai/dsh-skill-badge@npm%3A0.2.1-rc.2#./patches/dsh-skill-badge@0.2.1-rc.2.patch::version=0.2.1-rc.2&hash=7b8ecd&locator=picoaide-harness%40workspace%3A."
   peerDependencies:
     "@deepseek-ai/cordis": ~4.0.5
     "@deepseek-ai/dsh-skill": 0.2.1-rc.2
-  checksum: 10c0/7fb2aa2dd442bd01283b9b027e214d788479e36019e13ab5fc73c3478c32c4964964244234dbbe3467a67e58b3db7dea45bfc06ffe9e5c74279484715598a299
+  checksum: 10c0/ca45cae25c1ea00f111c4ca4721be402c9c11ef7a4c22a94a5934e2a5f44abd51026e1bca5fd8ff97f4023b490d70a555661d7ce5c4baca3a3292c6d63ab1782
   languageName: node
   linkType: hard
 
@@ -4558,6 +4558,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@deepseek-ai/dsh-tool-ralph@patch:@deepseek-ai/dsh-tool-ralph@npm%3A0.2.1-rc.2#./patches/dsh-tool-ralph@0.2.1-rc.2.patch::locator=picoaide-harness%40workspace%3A.":
+  version: 0.2.1-rc.2
+  resolution: "@deepseek-ai/dsh-tool-ralph@patch:@deepseek-ai/dsh-tool-ralph@npm%3A0.2.1-rc.2#./patches/dsh-tool-ralph@0.2.1-rc.2.patch::version=0.2.1-rc.2&hash=bc2ed8&locator=picoaide-harness%40workspace%3A."
+  dependencies:
+    "@deepseek-ai/schemastery": "npm:~3.18.5"
+  peerDependencies:
+    "@deepseek-ai/cordis": ~4.0.5
+    "@deepseek-ai/dsh-agent": 0.2.1-rc.2
+    "@deepseek-ai/dsh-llm": 0.2.1-rc.2
+    "@deepseek-ai/dsh-subagent": 0.2.1-rc.2
+    "@deepseek-ai/dsh-system-prompt": 0.2.1-rc.2
+    "@deepseek-ai/dsh-tools": 0.2.1-rc.2
+    "@deepseek-ai/dsh-workflow": 0.2.1-rc.2
+  checksum: 10c0/6e4ed41942f1237206b220a5a8f4d7aebd97a04781002bef7a089363c488715e41d9ac789ee8531b529c5722223f718c90e2cbcfd0bcf28509176973fa971008
+  languageName: node
+  linkType: hard
+
 "@deepseek-ai/dsh-tool-schedule@npm:0.2.1-rc.2":
   version: 0.2.1-rc.2
   resolution: "@deepseek-ai/dsh-tool-schedule@npm:0.2.1-rc.2"
@@ -4731,6 +4748,24 @@ __metadata:
     "@deepseek-ai/dsh-tools": 0.2.1-rc.2
     "@deepseek-ai/dsh-workflow": 0.2.1-rc.2
   checksum: 10c0/3158135002badd764435753fce7fd1e7691b721009a8118629b44ebfd6fea0fc89baa4032a9ec58fb3455ab00e5a602678c823e2d185489c38d50abc2090a474
+  languageName: node
+  linkType: hard
+
+"@deepseek-ai/dsh-tool-workflow@patch:@deepseek-ai/dsh-tool-workflow@npm%3A0.2.1-rc.2#./patches/dsh-tool-workflow@0.2.1-rc.2.patch::locator=picoaide-harness%40workspace%3A.":
+  version: 0.2.1-rc.2
+  resolution: "@deepseek-ai/dsh-tool-workflow@patch:@deepseek-ai/dsh-tool-workflow@npm%3A0.2.1-rc.2#./patches/dsh-tool-workflow@0.2.1-rc.2.patch::version=0.2.1-rc.2&hash=55ef01&locator=picoaide-harness%40workspace%3A."
+  dependencies:
+    "@deepseek-ai/schemastery": "npm:~3.18.5"
+  peerDependencies:
+    "@deepseek-ai/cordis": ~4.0.5
+    "@deepseek-ai/dsh-agent": 0.2.1-rc.2
+    "@deepseek-ai/dsh-jobs": 0.2.1-rc.2
+    "@deepseek-ai/dsh-llm": 0.2.1-rc.2
+    "@deepseek-ai/dsh-session": 0.2.1-rc.2
+    "@deepseek-ai/dsh-system-prompt": 0.2.1-rc.2
+    "@deepseek-ai/dsh-tools": 0.2.1-rc.2
+    "@deepseek-ai/dsh-workflow": 0.2.1-rc.2
+  checksum: 10c0/8a70dab6379fbce806cda991c5d724ec123a99c9e1cd90ebb790b447175d59ba9f1beb5870cc937d7ea9c291b92daabf3a1821e226e0cc0aa63fafb8c0fe7849
   languageName: node
   linkType: hard
 

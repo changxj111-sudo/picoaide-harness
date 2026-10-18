@@ -45,7 +45,11 @@
     "@deepseek-ai/dsh-schedule@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-schedule@npm%3A0.2.1-rc.2#./patches/dsh-schedule@0.2.1-rc.2.patch",
     "@deepseek-ai/dsh-schedule@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-schedule@npm%3A0.2.1-rc.2#./patches/dsh-schedule@0.2.1-rc.2.patch",
     "@deepseek-ai/dsh-web-app@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-web-app@npm%3A0.2.1-rc.2#./patches/dsh-web-app@0.2.1-rc.2.patch",
-    "@deepseek-ai/dsh-web-app@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-web-app@npm%3A0.2.1-rc.2#./patches/dsh-web-app@0.2.1-rc.2.patch"
+    "@deepseek-ai/dsh-web-app@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-web-app@npm%3A0.2.1-rc.2#./patches/dsh-web-app@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-tool-workflow@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-tool-workflow@npm%3A0.2.1-rc.2#./patches/dsh-tool-workflow@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-tool-workflow@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-tool-workflow@npm%3A0.2.1-rc.2#./patches/dsh-tool-workflow@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-tool-ralph@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-tool-ralph@npm%3A0.2.1-rc.2#./patches/dsh-tool-ralph@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-tool-ralph@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-tool-ralph@npm%3A0.2.1-rc.2#./patches/dsh-tool-ralph@0.2.1-rc.2.patch"
   },
   "dependenciesMeta": {
     "@deepseek-ai/dsh-subprocess-local": {

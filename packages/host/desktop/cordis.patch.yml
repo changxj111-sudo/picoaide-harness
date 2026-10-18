@@ -25,9 +25,10 @@
 #   - `ui-settings-models` 是上游模型 provider 页（enterprise 层已有同名 disable，
 #     这里再写一次，保证桌面层单独成立）；
 #   - `ui-settings-plugin-inventory` 是「内置插件」清单页。
-# `subagent-model-selection-settings` 不能 disable：`tool-subagent` 行在 Host scope
-# 里硬依赖它（disable 后 standard/ptc/cordis 预设全部 broken）。它的「模型」导航项
-# 由客户端 DOM 兜底隐藏（见 foot-menu 的 hideSettingsNav）。
+# `subagent-model-selection-settings` 不能 disable：自定义 preset 仍可能挂
+# `tool-subagent`，该行在 Host scope 里是硬依赖（缺它时 preset broken）。默认三个
+# preset 的 legacy 行已由 `patches/dsh-web-app` disabled；它的「模型」导航项由
+# 客户端 DOM 兜底隐藏（见 foot-menu 的 hideSettingsNav）。
 - id: ui-settings-models
   disabled: true
 - id: ui-settings-plugin-inventory

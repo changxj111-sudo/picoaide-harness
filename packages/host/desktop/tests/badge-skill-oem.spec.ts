@@ -58,6 +58,13 @@ describe('badge skill OEM branding', () => {
     }
   })
 
+  it('truncates by code point (no split surrogate pairs)', async () => {
+    const provider = load(`${'A'.repeat(79)}😀`)
+    const loaded = await provider.get(await first(provider.list()))
+    expect(loaded.content).toContain('Powered by')
+    expect(() => encodeURIComponent(loaded.content)).not.toThrow()
+  })
+
   it('drops control characters/backticks and keeps a bounded name', async () => {
     const provider = load(`Acme\n\`OEM\`${'x'.repeat(200)}`)
     const loaded = await provider.get(await first(provider.list()))

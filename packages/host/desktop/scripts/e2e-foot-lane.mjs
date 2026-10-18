@@ -256,7 +256,7 @@ try {
   const laneTexts = await visibleTexts()
   TRANSCRIPT.push(`可见按钮文案: ${JSON.stringify(laneTexts.slice(0, 24))}`)
   check('底部有「更多」行', laneTexts.includes('更多'))
-  check('「设置」行保留', laneTexts.includes('设置'))
+  check('「设置」入口已并入官方账户菜单（不在底栏常驻）', !laneTexts.includes('设置'))
   const leaked = FOOT_LABELS.filter(l => laneTexts.includes(l))
   check('5 个旧导航行已不可见（进入浮层）', leaked.length === 0, leaked.length === 0 ? '' : `仍可见: ${leaked.join(' / ')}`)
 

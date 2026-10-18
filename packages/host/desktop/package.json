@@ -146,8 +146,6 @@
     "probe:proxy": "node scripts/proxy-policy-probe.mjs",
     "e2e:client": "node scripts/e2e-client.mjs",
     "e2e:real": "node scripts/real-env-verify.mjs",
-    "e2e:real-cron-audit": "node scripts/real-env-cron-audit.mjs",
-    "e2e:real-cron-flow": "node scripts/real-env-cron-flow.mjs",
     "dist:mac:pack": "node scripts/release-mac.ts --pack",
     "dist:mac:notarize": "node scripts/release-mac.ts --notarize",
     "dist:mac:dmg": "node scripts/release-mac.ts --dmg",
@@ -496,7 +494,9 @@
       "!**/node_modules/@deepseek-ai/dsh-skill-badge/README*.md",
       "!**/node_modules/@deepseek-ai/dsh-skill-badge/icon.svg",
       "!**/node_modules/@deepseek-ai/dsh-experimental-badge-skill-bundle/README*.md",
-      "!**/node_modules/@deepseek-ai/dsh-experimental-badge-skill-bundle/icon.svg"
+      "!**/node_modules/@deepseek-ai/dsh-experimental-badge-skill-bundle/icon.svg",
+      "!**/node_modules/@deepseek-ai/dsh-skill-badge/README*",
+      "!**/node_modules/@deepseek-ai/dsh-experimental-badge-skill-bundle/README*"
     ],
     "mac": {
       "target": [

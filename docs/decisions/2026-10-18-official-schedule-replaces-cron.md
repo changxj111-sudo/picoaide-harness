@@ -8,8 +8,10 @@
 
 上游 0.2.1 把 `schedule` / `ui-schedule` 从可选 bundle 改为**每个 Web profile 默认装配**，
 `standard`/`cordis`/`ptc` preset 声明四个 `schedule_*` 工具；本仓自研的
-`@picoaide/dsh-cron`（Host 定时器 + 任务面板 + `cron_*` 工具）与它在功能上完全重叠，
-UI 上出现两个「自动化任务」入口。
+`@picoaide/dsh-cron`（Host 定时器 + 任务面板 + `cron_*` 工具）与它**能力有损地重叠**：
+官方是“提醒投递回原会话”，不提供自研 cron 的工作区/预设/权限钉住、独立执行结果与启停；
+但两者 UI 上会出现两个「自动化任务」入口，产品决定替换（损失见
+`docs/planning/2026-09-29-...:111`）。
 
 ## 定案
 
@@ -45,10 +47,11 @@ foot-menu 的同一个 DOM effect 还负责另外两处官方 chrome：
 
 - 组合层关闭两行：`ui-settings-models`（上游模型 provider 页；与 enterprise 层同名
   disable 双保险）与 `ui-settings-plugin-inventory`（内置插件清单页）。
-- `subagent-model-selection-settings` **不能 disable**：`tool-subagent` 行在 Host scope
-  里硬依赖它，disable 后 standard / ptc / cordis 三个预设全部 `broken`（实测报
+- `subagent-model-selection-settings` **不能 disable**：自定义 preset 仍可能挂
+  `tool-subagent`，该行在 Host scope 里是硬依赖（缺它时预设 `broken`，报
   `modelSelectionSettings requires .../model-selection-settings in the Host scope`）。
-  因此保留该行，只由 DOM 隐藏它的「模型」导航项。
+  默认三个 preset 的 legacy 行已由 `dsh-web-app` 补丁 disabled；该 settings 行保留，
+  只由 DOM 隐藏它的「模型」导航项。
 - foot-menu 的 DOM 兜底：设置对话框里与「通用设置」同一容器的「模型 / Models /
   内置插件 / Built-in plugins」导航项隐藏，防止其它包再次注册。
 - 客户端 E2E 断言 `设置窗口已隐藏「模型」「内置插件」入口` 通过。
@@ -61,14 +64,14 @@ foot-menu 的同一个 DOM effect 还负责另外两处官方 chrome：
 | 产品名 | bundle | 插入/替换的行 |
 | --- | --- | --- |
 | 语音输入 | `dsh-experimental-voice-input-bundle`（原有） | `speech-to-text`、`speech-to-text-sensevoice`、`api-speech-to-text`、`ui-voice-input` |
-| 智能体团队 | `dsh-experimental-agent-team-profile` | 禁用 `tool-subagent*` 四行，插入 `agent-team`、`tool-agent-team`、`ui-agent-team` |
+| 智能体团队 | `dsh-experimental-agent-team-profile` | 插入 `agent-team`、`tool-agent-team`、`ui-agent-team`；默认 preset 的 `tool-subagent*` 四行另由 `patches/dsh-web-app` 显式 disabled |
 | 自动授权审查 | `dsh-experimental-auto-review` | `auto-review` |
 | 思考过程机器翻译 | `dsh-experimental-cot-translation-bundle` | `translator`、`cot-translation`（provider `bing`，目标语言 auto） |
 | 持久终端 | `dsh-experimental-terminal-bundle` | `optional-persistent-terminals` 组（registry / bash / pwsh / tool-terminal） |
 | 会话搜索 | `dsh-experimental-session-search` | `optional-session-search` 组（sqlite 索引 `:memory:`，首次搜索时打开 + `tool-session-query`） |
 | 随对话更新的标题 | `dsh-experimental-session-titles-bundle` | 禁用 `session-title-llm`，插入 `session-title-all-prompts-llm` |
 | Ralph 循环 | `dsh-experimental-ralph-bundle` | `optional-ralph` 组（`workflow-ptc` + `tool-ralph`，`maxRounds: 64`） |
-| DSH 徽章技能 | `dsh-experimental-badge-skill-bundle` | `skill-badge`（`dsh-badge` skill；已打补丁改为读产品/OEM 名，见下） |
+| DSH 徽章技能 | `dsh-experimental-badge-skill-bundle` | `skill-badge`（skill 名 `badge`；已打补丁改为读产品/OEM 名，见下） |
 
 徽章技能的品牌补丁（`patches/dsh-skill-badge@0.2.1-rc.2.patch`）：
 
@@ -80,17 +83,20 @@ foot-menu 的同一个 DOM effect 还负责另外两处官方 chrome：
   electron-builder 的 `build.files` 里排除该 PNG，避免它随包分发；`assets/dsh-badge.md`
   也改为中性说明。
 - bundle 与 skill 的 locale 标题/描述同步改为「徽章技能 / 当前产品/OEM 名徽章」，
-  不再出现 DSH 或 powered-by-DSH 文案；skill 的内部 id 仍是 `dsh-badge`
-  （调用标识，不是展示文案）。
+  不再出现 DSH 或 powered-by-DSH 文案；skill 的调用标识/展示名是 `badge`，
+  `dsh-badge` 只剩 provider 包 id（不进入客户端展示面）。
 
 注意：
 
 - 这些是**上游 experimental** 包，默认值随上游走；升级时需复核每一行的语义变化。
-- `agent-team-profile` 会**禁用**上游的 `tool-subagent` / `tool-subagent-control` /
-  `tool-subagent-list-agents` / `tool-subagent-fork` 四行，由 Agent Teams 工具接管；
-  这是上游 bundle 的既定行为。
+- 默认 preset 的 `tool-subagent` / `tool-subagent-control` / `tool-subagent-list-agents` /
+  `tool-subagent-fork` 四行由 `patches/dsh-web-app` 显式 disabled，由 Agent Teams 工具接管；
+  `agent-team-profile` bundle 本身只插入 Team 行（上游 Web profile 已全局 disable 这四行）。
 - `auto-review` 会对每次工具调用走一次 LLM 授权复核（Auto 权限预设下），默认启用后
   延迟与 token 成本会上升；`session-search` 用内存索引；`terminal` 保留常驻 shell 进程。
+- `session-titles` 对每条 eligible human prompt 起一次标题 revision（LLM 调用）；
+  Team 会为根会话注入 policy/identity；CoT 翻译在展开 reasoning 时把文本发往
+  Bing/Google（默认 `bing`），这是已知外部数据面，设置页目前不可达。
 - 平台条件行 `optional-terminal-pwsh` 在非 Windows 上由上游 `disabled` 表达式关闭，
   这是正常状态（实测 `state=undefined, disabled=true`）。
 

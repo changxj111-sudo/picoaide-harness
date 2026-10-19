@@ -34,6 +34,8 @@ export default defineConfig({
   sourcemap: true,
   external: [
     '@deepseek-ai/cordis',
+    '@deepseek-ai/dsh-tools',
+    '@deepseek-ai/dsh-util-values',
     '@deepseek-ai/schemastery',
     'electron',
   ],

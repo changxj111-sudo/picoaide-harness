@@ -47,6 +47,42 @@ export const inject = ['slots', 'locale']
 // 一切正常（最难查的一类漂移）。
 export type { FootMenuEntry, FootMenuService } from './contract.ts'
 
+
+/**
+ * Open settings by calling the `openSettings` prop React gave the official
+ * account launcher. The launcher is hidden (it duplicates our 更多 row), and
+ * clicking a hidden trigger + menu item is brittle across profiles: the menu
+ * can fail to render, the item can be unmounted, or focus can be elsewhere.
+ * Walking the launcher's React fiber to the component that owns the prop is
+ * deterministic and still goes through upstream's own action (so the modal,
+ * shortcut, and active section behave exactly as the official entry).
+ *
+ * Returns false when React's internal key is unavailable; the caller then
+ * falls back to the DOM bridge below.
+ */
+function openSettingsFromLauncher(): boolean {
+  if (typeof document === 'undefined') return false
+  const triggers = [...document.querySelectorAll('button[aria-haspopup="menu"]')]
+    .filter(button => ['账号菜单', 'Account menu'].includes(button.getAttribute('aria-label') ?? ''))
+  for (const trigger of triggers) {
+    const internals = trigger as unknown as Record<string, unknown>
+    const fiberKey = Object.keys(internals).find(key => key.startsWith('__reactFiber$'))
+    if (fiberKey === undefined) continue
+    let fiber = internals[fiberKey] as { memoizedProps?: unknown, return?: unknown } | null
+    let depth = 0
+    while (fiber !== null && depth < 40) {
+      const props = fiber.memoizedProps as { openSettings?: unknown } | null | undefined
+      if (props !== null && props !== undefined && typeof props.openSettings === 'function') {
+        props.openSettings()
+        return true
+      }
+      fiber = (fiber.return ?? null) as { memoizedProps?: unknown, return?: unknown } | null
+      depth += 1
+    }
+  }
+  return false
+}
+
 /**
  * Open the upstream settings modal through the official `settings.launcher`
  * menu. The account trigger itself is hidden (it duplicates our 更多 row), so
@@ -56,6 +92,7 @@ export type { FootMenuEntry, FootMenuService } from './contract.ts'
  */
 function openOfficialSettings(): void {
   if (typeof document === 'undefined') return
+  if (openSettingsFromLauncher()) return
   const trigger = [...document.querySelectorAll('button[aria-haspopup="menu"]')]
     .find(button => ['账号菜单', 'Account menu'].includes(button.getAttribute('aria-label') ?? '')) as HTMLButtonElement | undefined
   if (trigger === undefined) return

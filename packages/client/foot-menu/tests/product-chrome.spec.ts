@@ -22,6 +22,17 @@ describe('hideProductChrome', () => {
     expect(visible(rows[2])).toBe(true)
   })
 
+  it('hides the official account trigger (second 更多) but keeps its own foot trigger', () => {
+    document.body.innerHTML = `
+      <button class="pico-foot-menu-trigger" aria-haspopup="menu" aria-label="更多功能">更多</button>
+      <button aria-haspopup="menu" aria-label="账号菜单">更多</button>
+    `
+    hideProductChrome(document)
+    const buttons = [...document.querySelectorAll('button')]
+    expect(visible(buttons[0])).toBe(true)
+    expect(visible(buttons[1])).toBe(false)
+  })
+
   it('recognises the account menu when the settings item carries a keycap suffix', () => {
     // macOS/Windows shortcuts append "⌘⌥," / "Ctrl+Alt+," to textContent.
     document.body.innerHTML = `

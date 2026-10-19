@@ -48,6 +48,53 @@ export const inject = ['slots', 'locale']
 export type { FootMenuEntry, FootMenuService } from './contract.ts'
 
 /**
+ * Open the upstream settings modal through the official `settings.launcher`
+ * menu. The account trigger itself is hidden (it duplicates our 更多 row), so
+ * this is the only user-visible path: click the hidden trigger, then its
+ * `设置` menu item. The menu is made invisible for the bridge so a stray
+ * popover never flashes at the hidden anchor.
+ */
+function openOfficialSettings(): void {
+  if (typeof document === 'undefined') return
+  const trigger = [...document.querySelectorAll('button[aria-haspopup="menu"]')]
+    .find(button => ['账号菜单', 'Account menu'].includes(button.getAttribute('aria-label') ?? '')) as HTMLButtonElement | undefined
+  if (trigger === undefined) return
+  const style = document.createElement('style')
+  style.setAttribute('data-pico-settings-bridge', '')
+  style.textContent = 'html[data-pico-settings-bridge] [role="menu"]{visibility:hidden !important}'
+  document.head.append(style)
+  document.documentElement.setAttribute('data-pico-settings-bridge', '')
+  let finished = false
+  const cleanup = (): void => {
+    if (finished) return
+    finished = true
+    document.documentElement.removeAttribute('data-pico-settings-bridge')
+    style.remove()
+  }
+  const clickItem = (attempt = 0): void => {
+    // Scope to the official menu: our own foot menu also has a 设置 item and
+    // its id starts with `pico-foot-menu-`; clicking it here would recurse.
+    const menu = [...document.querySelectorAll('[role="menu"]')]
+      .find(candidate => !candidate.id.startsWith('pico-foot-menu-'))
+    const item = menu === undefined ? undefined : [...menu.querySelectorAll('[role="menuitem"]')]
+      .find(candidate => /^(设置|Settings)(?:\s|$)/u.test((candidate.textContent ?? '').trim())) as HTMLElement | undefined
+    if (item !== undefined) {
+      item.click()
+      cleanup()
+      return
+    }
+    if (attempt < 40) {
+      setTimeout(() => clickItem(attempt + 1), 25)
+      return
+    }
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    cleanup()
+  }
+  trigger.click()
+  clickItem()
+}
+
+/**
  * Open the official Schedule manager (registered in `main` under key
  * `schedules`). The official sidebar row is hidden by this plugin, so the
  * click is the supported way to select that panel without duplicating it.
@@ -102,6 +149,11 @@ export function hideProductChrome(doc: Document): void {
       const tokens = [...button.classList]
       if (!tokens.some(token => token === 'panelRow' || token.endsWith('_panelRow'))) continue
       if (panelLabels.has(button.getAttribute('aria-label') ?? '')) button.style.display = 'none'
+    }
+    // 官方账户菜单的触发行（第二个「更多」）：本产品只保留自己的「更多」，
+    // 设置已并入该浮层；触发按钮保留在 DOM 里，供 openOfficialSettings 桥接。
+    for (const button of doc.querySelectorAll('button[aria-haspopup="menu"]')) {
+      if (['账号菜单', 'Account menu'].includes(button.getAttribute('aria-label') ?? '')) (button as HTMLElement).style.display = 'none'
     }
   }
   const settingsNavLabels = new Set(['模型', 'Models', '内置插件', 'Built-in plugins'])
@@ -198,6 +250,14 @@ export function apply(ctx: ClientContext): void {
     title: () => t('footMenu.schedule'),
     activate: openOfficialSchedulePanel,
   }), 'foot-menu: official automation entry')
+  // 官方账户菜单的第二个「更多」只承载「设置」；把它隐藏，并把设置收进本浮层，
+  // 保证左下角只有一个「更多」。打开设置仍走官方 settings.launcher 的菜单项。
+  ctx.effect(() => service.add({
+    id: 'settings',
+    order: 10,
+    title: () => t('footMenu.settings'),
+    activate: openOfficialSettings,
+  }), 'foot-menu: official settings entry')
   ctx.effect(() => {
     if (typeof document === 'undefined') return () => {}
     return installProductChromeHiding(document)

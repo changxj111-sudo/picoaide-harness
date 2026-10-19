@@ -19,6 +19,7 @@ export const zh = {
   'footMenu.attention': 'AI 正在等待你的操作',
   'footMenu.more': '更多',
   'footMenu.schedule': '自动化任务',
+  'footMenu.settings': '设置',
 }
 
 export const en: Record<keyof typeof zh, string> = {
@@ -27,6 +28,7 @@ export const en: Record<keyof typeof zh, string> = {
   'footMenu.attention': 'The AI is waiting for you',
   'footMenu.more': 'More',
   'footMenu.schedule': 'Automation tasks',
+  'footMenu.settings': 'Settings',
 }
 
 /** Keys of the foot-menu dictionary. */

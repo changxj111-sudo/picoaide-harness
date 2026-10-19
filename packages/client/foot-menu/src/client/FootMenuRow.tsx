@@ -95,7 +95,9 @@ const MENU: CSSProperties = {
   position: 'fixed',
   zIndex: 1100,
   boxSizing: 'border-box',
-  background: 'var(--dsw-alias-bg-layer-1)',
+  // 原生材质窗口（Windows Mica / macOS vibrancy）下 bg-layer-1 是半透明层，
+  // 浮层会变成一层透明膜；用实底 bg-base 保证可读性。
+  background: 'var(--dsw-alias-bg-base)',
   border: '1px solid var(--dsw-alias-border-l1)',
   borderRadius: 10,
   padding: 4,

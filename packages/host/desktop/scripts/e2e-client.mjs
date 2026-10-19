@@ -576,7 +576,9 @@ async function main() {
         visible: visible(row),
       },
       popoverHidden: menu === null || getComputedStyle(menu).display === 'none',
-      hasSettings: names.includes('设置') || settingsTrigger !== null || settingsLauncher !== null,
+      // 设置已收进「更多」浮层（官方账户触发行被隐藏）。
+      hasSettings: true,
+      moreRows: [...document.querySelectorAll('button')].filter(b => b.offsetParent !== null && (b.textContent ?? '').trim() === '更多').length,
       hasAccountRow: accountRow !== null,
       leaked: ['定时任务', '能力中心', '连接器', '浏览器', '应用中心'].filter(t => names.includes(t)),
       visibleButtons: names.length,
@@ -588,9 +590,10 @@ async function main() {
     && lane.popoverHidden === true
     && lane.hasSettings === true
     && lane.hasAccountRow === true
+    && lane.moreRows === 1
     && (lane.leaked?.length ?? 1) === 0
     && (lane.visibleButtons ?? 0) > 0
-  reportStep('侧边栏底部只剩「更多」一行（+ 设置 + 账户行），五个面板入口已并道',
+  reportStep('侧边栏底部只有一个「更多」（+ 账户行），设置已收进浮层',
     laneOk, `lane=${JSON.stringify(lane)}`)
   // 展开一次、合上一次：浮层真的能开，「更多」行是"点得到的那一行"。
   const laneOpened = await openFootMenu(cdp)
@@ -599,8 +602,21 @@ async function main() {
     laneOpened === 'OPENED' && Array.isArray(laneItems)
       && laneItems.length >= 5
       && laneItems[0] === '自动化任务'
-      && ['自动化任务', '能力中心', '连接器', '浏览器', '应用中心'].every(t => laneItems.includes(t)),
+      && ['自动化任务', '能力中心', '连接器', '浏览器', '应用中心', '设置'].every(t => laneItems.includes(t)),
     `open=${laneOpened} items=${JSON.stringify(laneItems)}`)
+  const menuSurface = await evalSafe(cdp, `(() => {
+    const menu = [...document.querySelectorAll('.pico-foot-menu-item')][0]?.closest('[role="menu"]')
+    if (menu === undefined) return null
+    const style = getComputedStyle(menu)
+    return { background: style.backgroundColor, opacity: style.opacity }
+  })()`)
+  const menuAlpha = /^rgba?\(([^)]+)\)$/u.exec(menuSurface?.background ?? '')
+  const menuOpaque = menuAlpha !== null
+    && menuAlpha[1].split(',').length === 4
+    ? Number(menuAlpha[1].split(',')[3]) >= 0.99
+    : menuAlpha !== null
+  reportStep('「更多」浮层使用不透明实底（原生材质窗口不透视）', menuSurface !== null && menuSurface.opacity === '1' && menuOpaque,
+    `menu=${JSON.stringify(menuSurface)}`)
   await screenshot(cdp, '05c-foot-menu')
   await evalSafe(cdp, `(() => { const row = document.querySelector('.pico-foot-menu-trigger'); if (row !== null) row.click(); return true })()`)
   await wait(500)
@@ -780,20 +796,9 @@ async function main() {
 
   // 6b. 设置仍然是上游的模态（我们没有改它）—— 只断言能打开与关闭。
   {
-    let open = await clickLabel(cdp, '设置', 300)
-    if (open !== 'CLICKED') {
-      // 0.2.1：设置入口在账户 launcher 的菜单里（`settings.launcher` 承载）。
-      const launcher = await evalSafe(cdp, `(() => {
-        const b = [...document.querySelectorAll('button[aria-haspopup="menu"]')].find(x => ((x.getAttribute('aria-label') ?? '').includes('账号')) && x.offsetParent)
-        if (b === undefined) return 'NO_LAUNCHER'
-        b.click()
-        return 'LAUNCHER_OPENED'
-      })()`)
-      await wait(500)
-      open = launcher === 'LAUNCHER_OPENED' ? await clickLabel(cdp, '设置', 2500) : 'NOT_FOUND'
-    } else {
-      await wait(2700)
-    }
+    // 2026-10-19：官方账户触发行（第二个「更多」）已隐藏；设置收进本产品
+    // 「更多」浮层，走同一个官方 settings.launcher 桥接。
+    const open = await clickFootMenuItem(cdp, '设置', 2500)
     const text = await bodyText(cdp)
     reportStep('设置面板可打开', open === 'CLICKED' && text.includes('设置'), 'settings')
     const settingsNav = await evalSafe(cdp, `(() => {
@@ -963,19 +968,7 @@ async function main() {
   await wait(1000)
 
   // 11. Account page (settings -> 账号).
-  let settingsReopened = await clickLabel(cdp, '设置', 300)
-  if (settingsReopened !== 'CLICKED') {
-    const launcher = await evalSafe(cdp, `(() => {
-      const b = [...document.querySelectorAll('button[aria-haspopup="menu"]')].find(x => ((x.getAttribute('aria-label') ?? '').includes('账号')) && x.offsetParent)
-      if (b === undefined) return 'NO_LAUNCHER'
-      b.click()
-      return 'LAUNCHER_OPENED'
-    })()`)
-    await wait(500)
-    settingsReopened = launcher === 'LAUNCHER_OPENED' ? await clickLabel(cdp, '设置', 2000) : 'NOT_FOUND'
-  } else {
-    await wait(1700)
-  }
+  const settingsReopened = await clickFootMenuItem(cdp, '设置', 2500)
   await clickLabel(cdp, '账号', 2000).catch(() => {})
   const account = await bodyText(cdp)
   reportStep('账号页可打开（设置内）', account.includes('账号') || account.includes('user'), `len=${account.length}`)

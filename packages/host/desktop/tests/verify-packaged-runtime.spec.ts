@@ -402,16 +402,19 @@ describe('上游补丁目标的静态 import 必须在打包必需清单里（G-
   // **子路径** import"与"打包必需清单"钉在一起；包根 import（`@deepseek-ai/dsh-tools`
   // 这类）不逐条登记 —— 清单是"缺了会静默/致命"的抽查oracle，不是完整打包清单。
   const PATCH_TARGETS = [
-    // `@deepseek-ai/dsh-agent-presets` was dropped in 0.1.7: the package no longer
-    // exists upstream (split into agent-preset + agent-preset-registry) and its
-    // patch — a module-resolution fallback — has no subject left to patch. The
-    // replacement implementation resolves through real Cordis/Node resolution
-    // instead of a disk walk, so that failure mode cannot recur.
+    // 2026-10-19：名单与 `patches/` 对齐（app-builder-lib 是构建依赖，不做 subpath
+    // import 扫描）。`dsh-schedule` 的补丁只加账号归属字段，其唯一静态上游子路径
+    // `@deepseek-ai/dsh-llm/brand` 由 base closure 随包，不纳入本扫描（否则要为
+    // 十几份 fake asar 夹具逐份补条目，判据噪声大于收益）。
     '@deepseek-ai/dsh-client-ui-brand-official',
+    '@deepseek-ai/dsh-client-ui-sidebar-documentpreview',
+    '@deepseek-ai/dsh-experimental-badge-skill-bundle',
+    '@deepseek-ai/dsh-fs-local',
     '@deepseek-ai/dsh-mcp-client',
-    '@deepseek-ai/dsh-plugin-package-inventory-deepseek',
     '@deepseek-ai/dsh-sandbox-windows-acl',
+    '@deepseek-ai/dsh-skill-badge',
     '@deepseek-ai/dsh-subprocess-local',
+    '@deepseek-ai/dsh-web-app',
     '@deepseek-ai/dsh-web-fetch-http',
   ]
 
@@ -787,7 +790,7 @@ describe('反向 oracle：清单必须覆盖产物（第三轮审计 P-1，2026-
     }
   })
 
-  it('第三轮审计实测的 6 条"无别表兜底"缺口逐条都不再静默', () => {
+  it('第三轮审计实测的 5 条"无别表兜底"缺口逐条都不再静默', () => {
     // 审计表里列出的 8 条（`browser/lib/surface.js`、`host-locale/lib/loopback.js`、
     // `browser|account-card|foot-menu` 的 `lib/client.js`、`account-card|cron` 的
     // `lib/invariant.js`）—— 这一轮它们被真实需要面反推出来了。
@@ -797,7 +800,6 @@ describe('反向 oracle：清单必须覆盖产物（第三轮审计 P-1，2026-
       'node_modules/@picoaide/dsh-browser/lib/client.js',
       'node_modules/@picoaide/dsh-account-card/lib/client.js',
       'node_modules/@picoaide/dsh-foot-menu/lib/client.js',
-      'node_modules/@picoaide/dsh-cron/lib/client.js',
     ]
     const effective = new Set(effectivePackagedRuntimeEntries())
     for (const entry of audited) expect(effective, `${entry} 不在生效清单里`).toContain(entry)

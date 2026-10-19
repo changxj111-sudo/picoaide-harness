@@ -595,13 +595,45 @@ async function main() {
   // 展开一次、合上一次：浮层真的能开，「更多」行是"点得到的那一行"。
   const laneOpened = await openFootMenu(cdp)
   const laneItems = await evalSafe(cdp, `[...document.querySelectorAll('.pico-foot-menu-item')].filter(b => b.offsetParent).map(b => (b.textContent ?? '').trim())`)
-  reportStep('「更多」浮层可展开且列出五个面板入口',
+  reportStep('「更多」浮层可展开且列出五个面板入口（自动化任务仍为第一项）',
     laneOpened === 'OPENED' && Array.isArray(laneItems)
-      && ['定时任务', '能力中心', '连接器', '浏览器', '应用中心'].every(t => laneItems.includes(t)),
+      && laneItems.length >= 5
+      && laneItems[0] === '自动化任务'
+      && ['自动化任务', '能力中心', '连接器', '浏览器', '应用中心'].every(t => laneItems.includes(t)),
     `open=${laneOpened} items=${JSON.stringify(laneItems)}`)
   await screenshot(cdp, '05c-foot-menu')
   await evalSafe(cdp, `(() => { const row = document.querySelector('.pico-foot-menu-trigger'); if (row !== null) row.click(); return true })()`)
   await wait(500)
+
+  // 5.4 官方重复入口与账户菜单项的隐藏：插件/自动化任务的 sidebar.panellist 行、
+  // 官方账户菜单里的 登录/意见反馈（本产品用自己的账户卡与渠道反馈入口）。
+  const officialRows = await evalSafe(cdp, `(() => {
+    const rows = [...document.querySelectorAll('button')].filter(b => [...b.classList].some(t => t === 'panelRow' || t.endsWith('_panelRow')))
+    return rows.map(b => ({ label: (b.getAttribute('aria-label') ?? '').trim(), visible: b.offsetParent !== null }))
+  })()`)
+  const accountTrigger = await evalSafe(cdp, `(() => {
+    const b = [...document.querySelectorAll('button[aria-haspopup="menu"]')].find(x => (x.getAttribute('aria-label') ?? '').includes('账号'))
+    if (b === undefined) return 'NO_TRIGGER'
+    b.click()
+    return 'OPENED'
+  })()`)
+  await wait(600)
+  const accountMenuItems = await evalSafe(cdp, `(() => {
+    const items = [...document.querySelectorAll('[role="menu"]')].flatMap(menu => [...menu.querySelectorAll('button, [role="menuitem"]')])
+    return items.filter(item => item.offsetParent !== null).map(item => (item.textContent ?? '').replace(/\s+/gu, ' ').trim())
+  })()`)
+  await evalSafe(cdp, `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`).catch(() => {})
+  await wait(400)
+  const scheduleRow = Array.isArray(officialRows) ? officialRows.find(row => row.label === '自动化任务') : undefined
+  const hiddenRowsOk = scheduleRow !== undefined
+    && scheduleRow.visible === false
+    && officialRows.every(row => row.visible === false)
+  const menuHasSettings = (accountMenuItems ?? []).some(text => text === '设置' || text.startsWith('设置'))
+  const hiddenMenuOk = accountTrigger === 'OPENED'
+    && menuHasSettings
+    && !['登录', '退出登录', '意见反馈'].some(label => (accountMenuItems ?? []).some(text => text === label || text.startsWith(`${label} `)))
+  reportStep('官方重复入口与账户菜单认证/反馈项已隐藏（设置仍保留）', hiddenRowsOk && hiddenMenuOk,
+    `rows=${JSON.stringify(officialRows)} menu=${JSON.stringify(accountMenuItems)} trigger=${accountTrigger}`)
 
   // 5.5 暗色模式（2026-09-16 真机事故的回归点）：
   //   ① 主题真的切到暗色（body[data-ds-dark-theme]）；
@@ -764,62 +796,47 @@ async function main() {
     }
     const text = await bodyText(cdp)
     reportStep('设置面板可打开', open === 'CLICKED' && text.includes('设置'), 'settings')
+    const settingsNav = await evalSafe(cdp, `(() => {
+      const general = [...document.querySelectorAll('button')].find(b => /^(通用设置|General)$/u.test((b.textContent ?? '').trim()))
+      const root = general?.closest('[role="dialog"]') ?? general?.parentElement?.parentElement
+      if (root == null) return null
+      return [...root.querySelectorAll('button')].filter(b => b.offsetParent).map(b => (b.textContent ?? '').trim())
+    })()`)
+    const settingsHiddenOk = Array.isArray(settingsNav)
+      && settingsNav.includes('通用设置')
+      && settingsNav.includes('账号')
+      && !['模型', '内置插件'].some(label => settingsNav.includes(label))
+    reportStep('设置窗口已隐藏「模型」「内置插件」入口（通用设置/账号仍在）', settingsHiddenOk, `nav=${JSON.stringify(settingsNav)}`)
     await screenshot(cdp, '05-settings')
     await clickLabel(cdp, '关闭', 1200)
   }
 
-  // 7. 定时任务：与上面三个共用同一套面板协议（这条保留为"协议本身"的回归）。
-  // 入口同样在「更多」浮层里（2026-09-21 并道）。
-  await clickFootMenuItem(cdp, '定时任务', 3500)
-  const cronLayout = await waitFor(cdp, `(() => {
-    if (document.documentElement.getAttribute('data-dsh-panel-active') !== 'cron') return false
-    const view = document.querySelector('[data-dsh-panel-surface="cron"]')
+  // 7. 官方「自动化任务」：0.2.1 起用上游 Schedule 取代自研 cron；入口仍在
+  // 「更多」浮层的原位（第一位）。先打开一个自有面板，验证从面板切换到官方
+  // schedules 时 panel-surface 的让位规则不会把官方页隐藏（SC-2 回归点）。
+  const capabilityClicked = await clickFootMenuItem(cdp, '能力中心', 2000)
+  const capabilityOpened = await waitFor(cdp, `document.documentElement.getAttribute('data-dsh-panel-active') === 'capability'`, 8000)
+  reportStep('切换前置：能力中心面板确实已打开', capabilityClicked === 'CLICKED' && capabilityOpened === true,
+    `click=${capabilityClicked} active=${String(capabilityOpened)}`)
+  const scheduleClicked = await clickFootMenuItem(cdp, '自动化任务', 3500)
+  const scheduleLayout = await waitFor(cdp, `(() => {
+    const heading = [...document.querySelectorAll('h1')].find(el => (el.textContent || '').includes('自动化任务') && el.offsetParent)
     const surface = document.querySelector('.dshDesktopConversationSurface')
-    if (view === null || surface === null) return false
-    const v = view.getBoundingClientRect(); const s = surface.getBoundingClientRect()
-    if (v.height <= 0 || getComputedStyle(view).display === 'none') return false
-    if (v.height < s.height * 0.9) return false
-    const others = [...surface.children].filter(el => !el.hasAttribute('data-dsh-panel-surface'))
-    return others.every(el => getComputedStyle(el).display === 'none' || el.getBoundingClientRect().height === 0)
+    const text = document.body.innerText || ''
+    const active = document.documentElement.getAttribute('data-dsh-panel-active')
+    return heading !== undefined
+      && surface !== null
+      && surface.getBoundingClientRect().height > 0
+      && active === null
+      && (text.includes('还没有自动化任务') || text.includes('任务列表'))
   })()`, 15000, 300)
-  const cronDetail = await evalSafe(cdp, `(() => {
-    const view = document.querySelector('[data-dsh-panel-surface="cron"]')
-    const surface = document.querySelector('.dshDesktopConversationSurface')
-    const v = view?.getBoundingClientRect(); const s = surface?.getBoundingClientRect()
-    return { view: v ? Math.round(v.height) : null, surface: s ? Math.round(s.height) : null }
-  })()`)
-  reportStep('定时任务中心面板占满中列（会话区已让位）', cronLayout,
-    `cronH=${cronDetail?.view} surfaceH=${cronDetail?.surface}`)
-  await screenshot(cdp, '06-cron')
-
-  // 卡片底部动作行（立即执行/编辑任务/执行详情/删除）必须留在卡片内：面板网格最小列宽
-  // 只有 268px，而这一行是 4 个 nowrap 按钮 —— 不放行折行时"删除"会被挤出卡片右侧
-  // （2026-09-21 用户截图）。判据量每个按钮与所属卡片的边界，**不是**量"有没有按钮"。
-  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 900, height: 560, deviceScaleFactor: 1, mobile: false })
-  await wait(500)
-  const cardFoot = await evalSafe(cdp, `(() => {
-    const view = document.querySelector('[data-dsh-panel-surface="cron"]')
-    if (view === null) return null
-    const buttons = [...view.querySelectorAll('button')].filter(b => ['立即执行', '编辑任务', '执行详情', '删除'].some(t => (b.textContent || '').includes(t)))
-    if (buttons.length === 0) return { buttons: 0 }
-    const outside = []
-    for (const button of buttons) {
-      const card = button.parentElement === null ? null : button.parentElement.parentElement
-      if (card === null) continue
-      const cr = card.getBoundingClientRect(); const br = button.getBoundingClientRect()
-      if (br.right > cr.right + 1 || br.left < cr.left - 1) outside.push((button.textContent || '').trim().slice(0, 6))
-    }
-    const scroller = view.querySelector('.pico-scroll')
-    return { buttons: buttons.length, outside, hOverflow: scroller === null ? false : scroller.scrollWidth > scroller.clientWidth + 2 }
-  })()`)
-  await cdp.send('Emulation.clearDeviceMetricsOverride')
-  await wait(300)
-  reportStep('定时任务卡片动作行不溢出卡片（900px 窄窗）',
-    cardFoot !== null && cardFoot.buttons > 0 && (cardFoot.outside?.length ?? 1) === 0 && cardFoot.hOverflow !== true,
-    `buttons=${cardFoot?.buttons} outside=${JSON.stringify(cardFoot?.outside)} hOverflow=${String(cardFoot?.hOverflow)}`)
-  // Leave the cron board: its "返回聊天" header button removes the activation attr.
-  await evalSafe(cdp, `(() => { const b=[...document.querySelectorAll('button')].find(x=>(x.textContent||'').includes('返回聊天') && x.offsetParent); if (b) b.click(); return !!b })()`).catch(() => {})
-  await wait(1200)
+  reportStep('官方自动化任务面板可打开且目录已就绪（入口仍在「更多」原位）',
+    scheduleClicked === 'CLICKED' && scheduleLayout === true,
+    `click=${scheduleClicked} schedule=${String(scheduleLayout)}`)
+  await screenshot(cdp, '06-schedule')
+  // 回到会话：官方任务页没有「返回聊天」；用侧栏「新会话」回到聊天输入。
+  await clickLabel(cdp, '新会话', 2500)
+  await wait(800)
 
   // 8. Chat input availability, SCOPED to the conversation column. Upstream
   // 0.1.2 rebuilt the composer around a plain input element (textarea-refactor),

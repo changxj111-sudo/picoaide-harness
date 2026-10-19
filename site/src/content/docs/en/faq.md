@@ -118,7 +118,7 @@ They do, but you usually do not have to care: tokens renew automatically (the SD
 
 ### If I close the client, do scheduled jobs still run?
 
-Closing the window does not matter (it only hides; the local service keeps running). **Triggers missed while the app is fully exited are skipped by default**, and you can enable "run the most recent missed trigger" in settings. Each run creates a new agent session (with the configured workspace, preset, and permissions); its details (trigger time, start/end, result, error, session) stay available, and you can also run one immediately. The model can operate jobs through tools such as `cron_create`, but a job it cannot see is reported as missing, and **a running job refuses deletion**.
+Closing the window does not matter (it only hides; the local service keeps running). **Nothing fires while the app is fully exited**; on the next launch, due tasks for the currently signed-in account are delivered once. A task delivers its prompt back to the original session that created it; trigger time and delivered message id stay visible in Automation tasks. Models can use `schedule_create` / `schedule_list` / `schedule_update` / `schedule_delete`, but the catalog and delivery are account-scoped, and a task the account cannot see is reported as missing.
 
 ### Is the built-in browser safe? Will the AI click around on its own?
 

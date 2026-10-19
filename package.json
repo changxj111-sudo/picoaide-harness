@@ -1,6 +1,6 @@
 {
   "name": "picoaide-harness",
-  "version": "2.8.3-beta.2",
+  "version": "2.8.3-beta.3",
   "private": true,
   "description": "PicoAide Harness product workspace",
   "license": "MIT",
@@ -37,7 +37,19 @@
     "@deepseek-ai/dsh-subprocess-local@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-subprocess-local@npm%3A0.2.1-rc.2#./patches/dsh-subprocess-local@0.2.1-rc.2.patch",
     "@deepseek-ai/dsh-web-fetch-http@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-web-fetch-http@npm%3A0.2.1-rc.2#./patches/dsh-web-fetch-http@0.2.1-rc.2.patch",
     "@deepseek-ai/dsh-web-fetch-http@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-web-fetch-http@npm%3A0.2.1-rc.2#./patches/dsh-web-fetch-http@0.2.1-rc.2.patch",
-    "@modelcontextprotocol/client": "2.0.0"
+    "@modelcontextprotocol/client": "2.0.0",
+    "@deepseek-ai/dsh-skill-badge@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-skill-badge@npm%3A0.2.1-rc.2#./patches/dsh-skill-badge@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-skill-badge@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-skill-badge@npm%3A0.2.1-rc.2#./patches/dsh-skill-badge@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-experimental-badge-skill-bundle@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-experimental-badge-skill-bundle@npm%3A0.2.1-rc.2#./patches/dsh-experimental-badge-skill-bundle@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-experimental-badge-skill-bundle@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-experimental-badge-skill-bundle@npm%3A0.2.1-rc.2#./patches/dsh-experimental-badge-skill-bundle@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-schedule@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-schedule@npm%3A0.2.1-rc.2#./patches/dsh-schedule@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-schedule@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-schedule@npm%3A0.2.1-rc.2#./patches/dsh-schedule@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-web-app@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-web-app@npm%3A0.2.1-rc.2#./patches/dsh-web-app@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-web-app@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-web-app@npm%3A0.2.1-rc.2#./patches/dsh-web-app@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-tool-workflow@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-tool-workflow@npm%3A0.2.1-rc.2#./patches/dsh-tool-workflow@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-tool-workflow@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-tool-workflow@npm%3A0.2.1-rc.2#./patches/dsh-tool-workflow@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-tool-ralph@npm:0.2.1-rc.2": "patch:@deepseek-ai/dsh-tool-ralph@npm%3A0.2.1-rc.2#./patches/dsh-tool-ralph@0.2.1-rc.2.patch",
+    "@deepseek-ai/dsh-tool-ralph@npm:^0.2.1-rc.2": "patch:@deepseek-ai/dsh-tool-ralph@npm%3A0.2.1-rc.2#./patches/dsh-tool-ralph@0.2.1-rc.2.patch"
   },
   "dependenciesMeta": {
     "@deepseek-ai/dsh-subprocess-local": {

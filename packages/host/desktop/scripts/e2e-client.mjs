@@ -621,6 +621,46 @@ async function main() {
   await evalSafe(cdp, `(() => { const row = document.querySelector('.pico-foot-menu-trigger'); if (row !== null) row.click(); return true })()`)
   await wait(500)
 
+  // 5.3 上游「视图选项」菜单：原生材质窗口下必须有 [data-menu-backing] 实底垫在
+  // 半透明 MenuSurface 后面；否则菜单会像透明膜一样透出下面的会话列表（2.8.2 起
+  // 反复出现的现场）。这里同时断言菜单与背板矩形对齐。
+  {
+    const opened = await evalSafe(cdp, `(() => {
+      const b = [...document.querySelectorAll('button')].find(x => (x.getAttribute('aria-label') ?? '') === '视图选项' && x.offsetParent)
+      if (b === undefined) return 'NO_TRIGGER'
+      b.click()
+      return 'OPENED'
+    })()`)
+    await wait(500)
+    const viewMenu = await evalSafe(cdp, `(() => {
+      const menu = [...document.querySelectorAll('[role="menu"]')].find(m => (m.textContent ?? '').includes('分组方式'))
+      if (menu === undefined) return null
+      const allBackings = [...document.querySelectorAll('[data-menu-backing]')]
+      const backing = allBackings.find(el => getComputedStyle(el).display !== 'none')
+      const style = getComputedStyle(menu)
+      const r = menu.getBoundingClientRect()
+      const b = backing === undefined ? null : backing.getBoundingClientRect()
+      return {
+        background: style.backgroundColor,
+        rect: { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) },
+        backing: b === null ? null : { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width), h: Math.round(b.height) },
+        mode: document.body.getAttribute('data-dsh-desktop-mode'),
+        backings: allBackings.map(el => ({ display: getComputedStyle(el).display, visibility: getComputedStyle(el).visibility, rect: (() => { const r = el.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) } })() })),
+      }
+    })()`)
+    const aligned = viewMenu?.backing !== null && viewMenu !== null
+      && Math.abs((viewMenu.backing?.x ?? 0) - viewMenu.rect.x) <= 2
+      && Math.abs((viewMenu.backing?.y ?? 0) - viewMenu.rect.y) <= 2
+      && Math.abs((viewMenu.backing?.w ?? 0) - viewMenu.rect.w) <= 2
+      && Math.abs((viewMenu.backing?.h ?? 0) - viewMenu.rect.h) <= 2
+    reportStep('上游「视图选项」菜单有实底背板（原生材质窗口不透视）',
+      opened === 'OPENED' && viewMenu !== null && aligned,
+      `opened=${opened} menu=${JSON.stringify(viewMenu)}`)
+    await screenshot(cdp, '05b-view-options')
+    await evalSafe(cdp, `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`).catch(() => {})
+    await wait(300)
+  }
+
   // 5.4 官方重复入口与账户菜单项的隐藏：插件/自动化任务的 sidebar.panellist 行、
   // 官方账户菜单里的 登录/意见反馈（本产品用自己的账户卡与渠道反馈入口）。
   const officialRows = await evalSafe(cdp, `(() => {

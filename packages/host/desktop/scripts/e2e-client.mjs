@@ -194,7 +194,15 @@ async function evalSafe(cdp, expression) {
 
 async function clickLabel(cdp, label, waitMs = 2500) {
   const r = await evalSafe(cdp, `(() => {
-    const els = [...document.querySelectorAll('button')].filter(b => b.textContent?.trim() === ${JSON.stringify(label)} && b.offsetParent)
+    const wanted = ${JSON.stringify(label)}
+    const visibleButtons = [...document.querySelectorAll('button')].filter(b => b.offsetParent)
+    let els = visibleButtons.filter(b => (b.textContent ?? '').trim() === wanted || (b.getAttribute('aria-label') ?? '').trim() === wanted)
+    if (!els.length && wanted === '设置') {
+      // 0.2.1 图标化后的设置触发器：文本/aria-label 都可能不是「设置」。
+      els = visibleButtons.filter(b => b.matches('button[aria-haspopup="dialog"]')
+        && !b.classList.contains('pico-account-row')
+        && !b.classList.contains('pico-foot-menu-trigger'))
+    }
     if (!els.length) return 'NOT_FOUND'
     els[0].click()
     return 'CLICKED'
@@ -541,12 +549,26 @@ async function main() {
     const menu = row === null ? null : document.getElementById(row.getAttribute('aria-controls') ?? '')
     const inPopover = (el) => menu !== null && menu.contains(el)
     const rowButtons = [...document.querySelectorAll('button')].filter(b => visible(b) && !inPopover(b))
-    const names = rowButtons.map(b => (b.textContent ?? '').trim()).filter(Boolean)
+    // 0.2.1 起设置触发器是**图标按钮**（可见文本为空，语义在 aria-label）：
+    // 名字取可见文本，空则回退 aria-label，否则「设置仍可用」会被误判成入口消失。
+    const names = rowButtons.map(b => {
+      const text = (b.textContent ?? '').trim()
+      return text !== '' ? text : (b.getAttribute('aria-label') ?? '').trim()
+    }).filter(Boolean)
     // 账户行按它自己的类名取（pico-account-row）：设置触发器同样带 aria-haspopup=dialog，
     // 用属性选会把它当成账户行（2026-09-21 真机 e2e 实测）。
     // ⚠️ 注入到页面里的这段代码是**宿主模板串的文本**：这里不许出现反引号（那会提前
     // 结束模板串，语法错误只会在很远处报出来 —— 2026-09-21 踩过）。
     const accountRow = [...document.querySelectorAll('button.pico-account-row')].find(visible) ?? null
+    // 0.2.1 的设置触发器是**图标按钮**（文案在 aria-label，且随语言变）。用它的
+    // 结构锚点识别：aria-haspopup=dialog，且不是账户行 / 「更多」行。
+    const settingsTrigger = rowButtons.find(b => b.matches('button[aria-haspopup="dialog"]')
+      && !b.classList.contains('pico-account-row')
+      && !b.classList.contains('pico-foot-menu-trigger')) ?? null
+    // 0.2.1 起设置入口由账户 launcher 承载（settings.launcher slot）：不再有独立
+    // 的「设置」按钮，设置项在账户菜单里。判据接受这条入口，但仍要求它真实可见。
+    const settingsLauncher = rowButtons.find(b => b.getAttribute('aria-haspopup') === 'menu'
+      && (b.getAttribute('aria-label') ?? '').includes('账号')) ?? null
     return {
       row: row === null ? null : {
         label: (row.textContent ?? '').trim(),
@@ -554,7 +576,7 @@ async function main() {
         visible: visible(row),
       },
       popoverHidden: menu === null || getComputedStyle(menu).display === 'none',
-      hasSettings: names.includes('设置'),
+      hasSettings: names.includes('设置') || settingsTrigger !== null || settingsLauncher !== null,
       hasAccountRow: accountRow !== null,
       leaked: ['定时任务', '能力中心', '连接器', '浏览器', '应用中心'].filter(t => names.includes(t)),
       visibleButtons: names.length,
@@ -726,7 +748,20 @@ async function main() {
 
   // 6b. 设置仍然是上游的模态（我们没有改它）—— 只断言能打开与关闭。
   {
-    const open = await clickLabel(cdp, '设置', 3000)
+    let open = await clickLabel(cdp, '设置', 300)
+    if (open !== 'CLICKED') {
+      // 0.2.1：设置入口在账户 launcher 的菜单里（`settings.launcher` 承载）。
+      const launcher = await evalSafe(cdp, `(() => {
+        const b = [...document.querySelectorAll('button[aria-haspopup="menu"]')].find(x => ((x.getAttribute('aria-label') ?? '').includes('账号')) && x.offsetParent)
+        if (b === undefined) return 'NO_LAUNCHER'
+        b.click()
+        return 'LAUNCHER_OPENED'
+      })()`)
+      await wait(500)
+      open = launcher === 'LAUNCHER_OPENED' ? await clickLabel(cdp, '设置', 2500) : 'NOT_FOUND'
+    } else {
+      await wait(2700)
+    }
     const text = await bodyText(cdp)
     reportStep('设置面板可打开', open === 'CLICKED' && text.includes('设置'), 'settings')
     await screenshot(cdp, '05-settings')
@@ -911,7 +946,19 @@ async function main() {
   await wait(1000)
 
   // 11. Account page (settings -> 账号).
-  await clickLabel(cdp, '设置', 2000).catch(() => {})
+  let settingsReopened = await clickLabel(cdp, '设置', 300)
+  if (settingsReopened !== 'CLICKED') {
+    const launcher = await evalSafe(cdp, `(() => {
+      const b = [...document.querySelectorAll('button[aria-haspopup="menu"]')].find(x => ((x.getAttribute('aria-label') ?? '').includes('账号')) && x.offsetParent)
+      if (b === undefined) return 'NO_LAUNCHER'
+      b.click()
+      return 'LAUNCHER_OPENED'
+    })()`)
+    await wait(500)
+    settingsReopened = launcher === 'LAUNCHER_OPENED' ? await clickLabel(cdp, '设置', 2000) : 'NOT_FOUND'
+  } else {
+    await wait(1700)
+  }
   await clickLabel(cdp, '账号', 2000).catch(() => {})
   const account = await bodyText(cdp)
   reportStep('账号页可打开（设置内）', account.includes('账号') || account.includes('user'), `len=${account.length}`)

@@ -113,7 +113,7 @@ PicoAide Harness 是**企业级 DeepSeek Harness 一体化平台**：桌面客�
 
 ## 上游版本
 
-上游 DeepSeek Harness 以**固定版本原样运行**（当前 pin `dsh-v0.2.0-rc.2`，真源为仓库根 `upstream.json`）：不做整体分叉，只保留少量带判据的补丁，升级只跟随上游版本号。取舍与代价见[产品哲学](/philosophy/)。
+上游 DeepSeek Harness 以**固定版本原样运行**（当前 pin `dsh-v0.2.1-rc.2`，真源为仓库根 `upstream.json`）：不做整体分叉，只保留少量带判据的补丁，升级只跟随上游版本号。取舍与代价见[产品哲学](/philosophy/)。
 
 ## 相关
 

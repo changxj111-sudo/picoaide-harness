@@ -140,7 +140,7 @@ Windows 安装程序与 Linux AppImage 未签名（macOS 正式版已签名 + �
 
 ### PicoAide Harness 与 DeepSeek Harness 是什么关系？
 
-基于固定版本的 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（当前 pin `dsh-v0.2.0-rc.2`，真源为仓库根 `upstream.json`）构建。上游提供核心智能体、插件系统与 Web UI；本项目提供桌面封装、本地服务管理与企业级管控面。**上游源码原样运行，不魔改**——只保留少量带判据的补丁，升级只跟随上游版本号。
+基于固定版本的 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（当前 pin `dsh-v0.2.1-rc.2`，真源为仓库根 `upstream.json`）构建。上游提供核心智能体、插件系统与 Web UI；本项目提供桌面封装、本地服务管理与企业级管控面。**上游源码原样运行，不魔改**——只保留少量带判据的补丁，升级只跟随上游版本号。
 
 ### 这是 DeepSeek 官方产品吗？
 

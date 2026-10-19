@@ -88,7 +88,7 @@ When all three hold at once, the only workable shape is "local execution + serve
 
 ### Pinned upstream + plugin composition
 
-Upstream DeepSeek Harness runs at a **fixed version** (currently pinned at `dsh-v0.2.0-rc.2`; `upstream.json` at the repository root is the source of truth). The repository keeps only a small set of **patches with regression tests** (`patches/`, each with a matching test) and does not modify upstream wholesale. The desktop shell is itself a **legitimate DSH plugin**: it neither invents a second renderer IPC plugin system nor exposes Electron APIs to the page; it inserts itself as one row in the upstream Cordis plugin tree.
+Upstream DeepSeek Harness runs at a **fixed version** (currently pinned at `dsh-v0.2.1-rc.2`; `upstream.json` at the repository root is the source of truth). The repository keeps only a small set of **patches with regression tests** (`patches/`, each with a matching test) and does not modify upstream wholesale. The desktop shell is itself a **legitimate DSH plugin**: it neither invents a second renderer IPC plugin system nor exposes Electron APIs to the page; it inserts itself as one row in the upstream Cordis plugin tree.
 
 So "what we add" and "what upstream provides" live on the same assembly surface and are expressed the same way:
 

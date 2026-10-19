@@ -88,7 +88,7 @@ PicoAide Harness 是一个三层系统：**桌面客户端 / 本地 Harness 服�
 
 ### 固定上游 + 插件组合
 
-上游 DeepSeek Harness 以**固定版本**运行（当前 pin `dsh-v0.2.0-rc.2`，真源为仓库根 `upstream.json`），仓库对上游只保留少量**带判据的补丁**（`patches/`，每条都有对应的回归用例），不做整体魔改。桌面壳本身就是一个**合法的 DSH 插件**：它不另造一套 renderer IPC 插件系统，也不把 Electron API 暴露给页面，而是把自己作为一行插入上游的 Cordis 插件树。
+上游 DeepSeek Harness 以**固定版本**运行（当前 pin `dsh-v0.2.1-rc.2`，真源为仓库根 `upstream.json`），仓库对上游只保留少量**带判据的补丁**（`patches/`，每条都有对应的回归用例），不做整体魔改。桌面壳本身就是一个**合法的 DSH 插件**：它不另造一套 renderer IPC 插件系统，也不把 Electron API 暴露给页面，而是把自己作为一行插入上游的 Cordis 插件树。
 
 因此「我们加的东西」与「上游的东西」在同一个装配面上，用同一种机制表达：
 

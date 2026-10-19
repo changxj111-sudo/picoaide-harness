@@ -142,7 +142,7 @@ Do not read another plugin's DOM, stylesheets, or component source to guess plac
 
 This line is a hard contract:
 
-- **Platform module table (`PLATFORM_MODULES`)**: `react`, `react/jsx-runtime`, `react-dom`, `react-dom/client`, `@deepseek-ai/cordis`, `@deepseek-ai/dsh-client-store`, `@deepseek-ai/dsh-client-ui-slots`, `@deepseek-ai/dsh-client-ui-primitives`, `@deepseek-ai/dsh-client-ui-dockkit` — 9 entries; the single source of truth in this repository is `scripts/platform-modules.mjs`, mirrored entry by entry from the pinned upstream `deepseek-harness/packages/client/web/src/platform.ts`.
+- **Platform module table (`PLATFORM_MODULES`)**: `react`, `react/jsx-runtime`, `react-dom`, `react-dom/client`, `@deepseek-ai/cordis`, `zod`, `@tanstack/react-virtual`, `@deepseek-ai/dsh-client-store`, `@deepseek-ai/dsh-client-ui-slots`, `@deepseek-ai/dsh-client-ui-primitives`, `@deepseek-ai/dsh-client-ui-dockkit` — 11 entries; the single source of truth in this repository is `scripts/platform-modules.mjs`, mirrored entry by entry from the pinned upstream `deepseek-harness/packages/client/web/src/platform.ts`.
 
 The alignment rules:
 

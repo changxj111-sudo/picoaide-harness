@@ -116,7 +116,7 @@ These are deliberate boundaries rather than "coming later"; they are listed here
 
 ## Upstream version
 
-The upstream DeepSeek Harness runs **unchanged at a fixed version** (currently pinned at `dsh-v0.2.0-rc.2`; the source of truth is `upstream.json` at the repository root). There is no whole-tree fork — only a small set of patches, each with its own guard — and upgrades follow the upstream version number. Trade-offs and costs are in [Product Philosophy](/en/philosophy/).
+The upstream DeepSeek Harness runs **unchanged at a fixed version** (currently pinned at `dsh-v0.2.1-rc.2`; the source of truth is `upstream.json` at the repository root). There is no whole-tree fork — only a small set of patches, each with its own guard — and upgrades follow the upstream version number. Trade-offs and costs are in [Product Philosophy](/en/philosophy/).
 
 ## Related
 

@@ -363,7 +363,41 @@ const REGISTERED_INSTALL_INTEGRITY_BODIES = [
     // （`scripts/check-ci-parity.mjs` / `scripts/ci-parity-classifier.mjs`）⇒ 本件内容变了，
     // 摘要同步进 diff。**注意 `--print-digests` 在有未提交改动时打印的是 HEAD 那份**，
     // 登记值必须取**工作树**（= 提交后的 HEAD）那份：`sha256sum scripts/check-install-integrity.mjs`。
-    sha256: 'da08d35a39dce20a40319e1948cf77de9addb8ab9bc5204d74d4283b62308cf4',
+    //
+    // 2026-10-13：`EXECUTION_POINT_REGISTRY` 登记了新包
+    // `packages/host/capability-center` 的四条派生执行点 + 网关客户端叶子包的三条
+    // （能力中心 host + client 双面 / `server-connector` 实现落点，2026-10-13 P0-b）
+    // ⇒ 本件内容变了，摘要同步进 diff
+    // （取值 = `sha256sum scripts/check-install-integrity.mjs`，即提交后的 HEAD 那份）。
+    //
+    // 2026-10-14：`EXECUTION_POINT_REGISTRY` 补登两处 —— `p1b-conditionalize` 新加的 CI
+    // 步骤执行体（`scripts/check-go-build-tags.mjs`，真文件在 `server/scripts/`，由 server job
+    // 的 `defaults.run.working-directory` 解析成规范名）与 account-card 新增的
+    // `tsconfig.tests.json`（对抗审计 P2-甲：测试期源码边此前没有任何 typecheck 观察力）
+    // ⇒ 本件内容变了，摘要同步进 diff（同一条 `sha256sum` 口径）。
+    //
+    // 2026-10-14（p2 变体裁剪并入后）：`EXECUTION_FACE_REGISTRY` 再补登一条
+    // `packages/host/desktop/scripts/channel-variant.ts`（新脚本，打包入口与
+    // `verify-packaged-runtime` 都经它取本轮变体声明）⇒ 摘要再次同步进 diff。
+    // ⚠️ 这条漏登记过一次：它**不在 17 条根守卫里**（是 `ci.yml` 里 yarn 之前的
+    // "Judge execution bodies are pristine" 那一步），合并后必须单独跑一次本脚本。
+    //
+    // 2026-10-14（模块编译契约，方案 B）：`EXECUTION_FACE_REGISTRY` 补登
+    // `scripts/gen-module-contract.mjs`（单一真源 `module-contract.json` 的生成器 + `--check`
+    // 门禁；它改写六个端的生成区）+ `CI_REFERENCED_EXECUTION_REGISTRY` 补登同一条
+    // （`ci.yml` 的生成区标记文本里点了它的名）⇒ 本件内容变了，摘要同步进 diff
+    // （取值 = `sha256sum scripts/check-install-integrity.mjs`，即提交后的 HEAD 那份）。
+    //
+    // 2026-10-14（渠道缺省 + 渠道清单工具）：`EXECUTION_FACE_REGISTRY` 再补登
+    // `scripts/channel-modules.mjs`（`--list` / `--template` / `--explain` / `--check`；
+    // 它读契约 + 真跑 `normalizeChannelFeatures()`，被 `verify-ci-scripts.mjs` 第 20 节真跑）
+    // ⇒ 摘要再次同步（同一条 `sha256sum` 口径）。
+    //
+    // 2026-10-19（合并 origin/master：DSH 0.2.1-rc.2 + 官方 Schedule 退役自研 cron）：
+    // `EXECUTION_POINT_REGISTRY` / `EXECUTION_FACE_REGISTRY` 两侧各自的登记（P0 集成的
+    // 能力中心、网关客户端、模块编译契约等 + master 的 schedule 与审计判据）合并后，
+    // 本件内容再次变化 ⇒ 摘要按 `sha256sum scripts/check-install-integrity.mjs` 同步。
+    sha256: 'edf310540cee7b0077603c359d01ba38113d75a3cf3c1a4faf95e4f5e17ac5c8',
     methods: [
       'judge-body-bytes-equal-head',
       'yarnrc-forbidden-keys',

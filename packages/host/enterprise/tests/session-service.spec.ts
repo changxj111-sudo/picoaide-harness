@@ -112,6 +112,7 @@ describe('session-service', () => {
     writeFileSync(file, JSON.stringify(SAMPLE_SESSION), { mode: 0o600 })
     const { ctx, emit } = stubCtx()
     const service = new SessionService(ctx, { tokenFile: file })
+    // 现象：restore 在构造期异步发起（动态 import + 读文件），CI 4 vCPU 负载下可能超过 vitest 缺省的 1s 预算；下限取 10s（R11-B-02）。
     await vi.waitFor(() => { expect(service.getSession()).toEqual(SAMPLE_SESSION) }, { timeout: 10_000 })
     expect(emit).toHaveBeenCalledWith(SESSION_CHANGED_EVENT, SAMPLE_SESSION)
   })
@@ -124,6 +125,7 @@ describe('session-service', () => {
     writeFileSync(file, Buffer.concat([Buffer.from('v10'), Buffer.from([1, 2, 3, 4, 5, 6, 7, 8])]), { mode: 0o600 })
     const { ctx, emit } = stubCtx()
     const service = new SessionService(ctx, { tokenFile: file })
+    // 现象：失败路径同样要等 restore 的一次异步落定；预算理由与下限同上（R11-B-02）。
     await vi.waitFor(() => { expect(emit).toHaveBeenCalledWith(SESSION_CHANGED_EVENT, null) }, { timeout: 10_000 })
     expect(service.getSession()).toBeNull()
   })
